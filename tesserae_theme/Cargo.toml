@@ -1,0 +1,9 @@
+[package]
+name = "tesserae_theme"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gpui = { git = "https://github.com/gpui-ce/gpui-ce" }
+gpui_platform = { git = "https://github.com/gpui-ce/gpui-ce" }
+palette = "0.7"
