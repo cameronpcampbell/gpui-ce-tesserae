@@ -1,6 +1,12 @@
 [package]
-name = "tesserae_registry_button"
+name = "button"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+gpui.workspace = true
+tesserae_utils.workspace = true
+gpui_platform.workspace = true
+tesserae_theme.workspace = true
+smallvec.workspace = true
+palette.workspace = true

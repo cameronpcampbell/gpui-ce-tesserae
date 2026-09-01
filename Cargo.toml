@@ -1,3 +1,29 @@
 [workspace]
 resolver = "1"
-members = ["crates/tesserae_cli", "crates/tesserae_theme", "crates/tesserae_registry/button"]
+members = [
+  "crates/build_setters_macro",
+  "crates/tesserae_utils",
+  "crates/tesserae_cli",
+  "crates/tesserae_theme",
+  "crates/tesserae_registry/button",
+  "crates/playground",
+]
+
+[workspace.dependencies]
+build_setters_macro = { path = "crates/build_setters_macro" }
+gpui_macro_utils = { path = "crates/gpui_macro_utils" }
+tesserae_utils = { path = "crates/tesserae_utils" }
+tesserae_theme = { path = "crates/tesserae_theme" }
+
+gpui = { package = "gpui-ce", git = "https://github.com/gpui-ce/gpui-ce" }
+gpui_platform = { package = "gpui_ce_platform", git = "https://github.com/gpui-ce/gpui-ce" }
+
+palette = "0.7"
+proc-macro2 = "1"
+quote = "1"
+smallvec = "1.15.2"
+syn = { version = "2", features = ["full"] }
+
+[patch."https://github.com/gpui-ce/gpui-ce"]
+gpui = { package = "gpui-ce", git = "https://github.com/cameronpcampbell/gpui-ce", branch = "multiverse_crossover" }
+gpui_platform = { package = "gpui_ce_platform", git = "https://github.com/cameronpcampbell/gpui-ce", branch = "multiverse_crossover" }

@@ -20,7 +20,6 @@ xcuserdata/
 .copilot/
 .codex/
 .gemini/
-.agents/
 
 # MacOS file system clutter.
 ._*
