@@ -5,7 +5,7 @@ use gpui::{
     ease_in_out, millis, px,
 };
 use palette::Oklaba;
-use tesserae_utils::{StyledElement, WindowUtils, focus_handle, kinds};
+use tesserae_utils::{StyledElement, WindowUtils, kinds, use_focus_handle};
 
 use smallvec::SmallVec;
 use tesserae_theme::{Theme, ThemeFgKind};
@@ -97,7 +97,7 @@ impl RenderOnce for Button {
         window: &mut gpui::Window,
         cx: &mut gpui::App,
     ) -> impl gpui::IntoElement {
-        let focus_handle = focus_handle(self.id.clone(), window, cx);
+        let focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
 
         let theme = Theme::read_global(cx);
 
@@ -273,7 +273,7 @@ where
         .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
 }
 
-kinds!(pub ButtonVariantKind<_, &Theme> {
+kinds!(pub ButtonVariantKind<Styled + StatefulInteractiveElement, &Theme> {
     #[default]
     Primary (this, theme) => {
         fill_button_variant_kind(this, theme, theme.accent_primary)

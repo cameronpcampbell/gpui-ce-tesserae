@@ -2,19 +2,22 @@ use gpui::{
     AbsoluteLength, App, DefiniteLength, ElementId, FocusHandle, Pixels, Window,
 };
 
-pub fn focus_handle(
+pub fn use_focus_handle(
     base_id: impl Into<ElementId>,
     window: &mut Window,
     cx: &mut App,
+    focus_handle: Option<FocusHandle>,
 ) -> FocusHandle {
-    window
-        .use_keyed_state(
-            (base_id.into(), "state:focus_handle"),
-            cx,
-            |_window, cx| cx.focus_handle().tab_stop(true),
-        )
-        .read(cx)
-        .clone()
+    focus_handle.unwrap_or_else(|| {
+        window
+            .use_keyed_state(
+                (base_id.into(), "state:focus_handle"),
+                cx,
+                |_window, cx| cx.focus_handle().tab_stop(true),
+            )
+            .read(cx)
+            .clone()
+    })
 }
 
 pub trait WindowUtils {

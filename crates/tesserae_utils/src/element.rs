@@ -1,12 +1,8 @@
-use gpui::{
-    Element, Refineable, StatefulInteractiveElement, StyleRefinement, Styled,
-};
+use gpui::{Refineable, StyleRefinement, Styled};
 
 use crate::Kind;
 
-pub trait StyledElement:
-    Element + Styled + StatefulInteractiveElement + Sized
-{
+pub trait StyledElement: Styled + Sized {
     fn apply_kind<'a, K: Kind<Self>>(self, kind: K, data: K::Data<'a>) -> Self {
         kind.apply(self, data)
     }
@@ -17,4 +13,4 @@ pub trait StyledElement:
     }
 }
 
-impl<E: Element + Styled + StatefulInteractiveElement> StyledElement for E {}
+impl<E: Styled> StyledElement for E {}

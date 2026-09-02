@@ -1,6 +1,6 @@
-use gpui::{Element, StatefulInteractiveElement, Styled};
+use gpui::Styled;
 
-pub trait Kind<E: Element + Styled + StatefulInteractiveElement> {
+pub trait Kind<E: Styled> {
     type Data<'a>;
 
     fn apply<'a>(&self, element: E, data: Self::Data<'a>) -> E;
@@ -17,9 +17,7 @@ macro_rules! kinds {
             @collect
             [
                 @impl generic [
-                    $crate::__gpui::Element
-                    + $crate::__gpui::Styled
-                    + $crate::__gpui::StatefulInteractiveElement
+                    $crate::__gpui::Styled
                 ] $visibility $kind_name
             ]
             []
@@ -34,9 +32,7 @@ macro_rules! kinds {
     ) => {
         $crate::kinds! {
             @impl generic [
-                $crate::__gpui::Element
-                + $crate::__gpui::Styled
-                + $crate::__gpui::StatefulInteractiveElement
+                $crate::__gpui::Styled
             ] $visibility $kind_name [&'data $data_type] {
                 $($kinds)*
             }
@@ -49,9 +45,7 @@ macro_rules! kinds {
     ) => {
         $crate::kinds! {
             @impl generic [
-                $crate::__gpui::Element
-                + $crate::__gpui::Styled
-                + $crate::__gpui::StatefulInteractiveElement
+                $crate::__gpui::Styled
             ] $visibility $kind_name [$data_type] {
                 $($kinds)*
             }
