@@ -1,9 +1,9 @@
 mod element;
-mod variants;
+mod kinds;
 mod window;
 
 pub use element::StyledElement;
-pub use variants::Variant;
+pub use kinds::Kind;
 pub use window::{WindowUtils, focus_handle};
 
 #[doc(hidden)]

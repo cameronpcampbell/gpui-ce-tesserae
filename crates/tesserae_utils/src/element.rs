@@ -1,12 +1,19 @@
-use gpui::{Element, StatefulInteractiveElement, Styled};
+use gpui::{
+    Element, Refineable, StatefulInteractiveElement, StyleRefinement, Styled,
+};
 
-use crate::Variant;
+use crate::Kind;
 
 pub trait StyledElement:
     Element + Styled + StatefulInteractiveElement + Sized
 {
-    fn apply_variant<'a, V: Variant>(self, variant: V, data: V::Data<'a>) -> Self {
-        variant.apply(self, data)
+    fn apply_kind<'a, K: Kind>(self, kind: K, data: K::Data<'a>) -> Self {
+        kind.apply(self, data)
+    }
+
+    fn refine(mut self, refinement: StyleRefinement) -> Self {
+        self.style().refine(&refinement);
+        self
     }
 }
 

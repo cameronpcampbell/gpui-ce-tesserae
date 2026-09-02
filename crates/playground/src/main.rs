@@ -1,4 +1,4 @@
-use button::ButtonVariant;
+use button::{Button, ButtonSizeKind, ButtonVariantKind};
 use gpui::{
     App, Bounds, KeyBinding, WindowOptions, actions, div, prelude::*, px, size,
 };
@@ -24,33 +24,47 @@ impl Render for Root {
             .tab_index(0)
             .bg(theme.bg_primary)
             .flex()
+            .flex_col()
             .justify_center()
             .items_center()
-            .child(
-                div()
-                    .flex()
-                    .items_start()
-                    .gap(px(10.))
-                    .child(
-                        button::Button::new("button_xs")
-                            .variant(ButtonVariant::Xs)
-                            .child("Extra Small"),
-                    )
-                    .child(
-                        button::Button::new("button_sm")
-                            .variant(ButtonVariant::Sm)
-                            .child("Small"),
-                    )
-                    .child(
-                        button::Button::new("button_md")
-                            .variant(ButtonVariant::Md)
-                            .child("Medium"),
-                    )
-                    .child(
-                        button::Button::new("button_lg")
-                            .variant(ButtonVariant::Lg)
-                            .child("Large"),
-                    ),
+            .gap(px(10.))
+            .children(
+                [
+                    ButtonVariantKind::Primary,
+                    ButtonVariantKind::Secondary,
+                    ButtonVariantKind::Outline,
+                ]
+                .into_iter()
+                .map(|variant| {
+                    div()
+                        .flex()
+                        .items_start()
+                        .gap(px(10.))
+                        .child(
+                            Button::new(("button_xs", variant as usize))
+                                .size(ButtonSizeKind::Xs)
+                                .variant(variant)
+                                .child("Extra Small"),
+                        )
+                        .child(
+                            Button::new(("button_sm", variant as usize))
+                                .size(ButtonSizeKind::Sm)
+                                .variant(variant)
+                                .child("Small"),
+                        )
+                        .child(
+                            Button::new(("button_md", variant as usize))
+                                .size(ButtonSizeKind::Md)
+                                .variant(variant)
+                                .child("Medium"),
+                        )
+                        .child(
+                            Button::new(("button_lg", variant as usize))
+                                .size(ButtonSizeKind::Lg)
+                                .variant(variant)
+                                .child("Large"),
+                        )
+                }),
             )
     }
 }
@@ -69,12 +83,12 @@ fn main() {
                 ..Default::default()
             },
             |_window, cx| {
-                ThemeSet::set_global(cx, ThemeSet::generate(ThemeConfig::default()));
+                let theme_set = ThemeSet::generate(
+                    ThemeConfig::default().base_caution().base_fg().base_bg(),
+                );
+                println!("{:#?}", theme_set.dark);
 
-                let theme = ThemeSet::generate(ThemeConfig::default());
-
-                println!("{:#?}", theme.dark);
-
+                ThemeSet::set_global(cx, theme_set);
                 ThemeSetKind::set_global(cx, ThemeSetKind::Dark);
 
                 cx.new(|_cx| Root)
