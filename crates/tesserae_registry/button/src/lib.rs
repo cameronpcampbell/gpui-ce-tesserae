@@ -1,8 +1,10 @@
 use gpui::{
     AnyElement, DurationWithEasing, ElementId, FontWeight, InteractiveElement,
-    IntoElement, Lerp, ParentElement, RenderOnce, StyleRefinement, Styled, Window,
-    div, ease_in_out, millis, px,
+    IntoElement, Lerp, ParentElement, Pixels, Rems, RenderOnce,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, class, div,
+    ease_in_out, millis, px,
 };
+use palette::Oklaba;
 use tesserae_utils::{StyledElement, WindowUtils, focus_handle, kinds};
 
 use smallvec::SmallVec;
@@ -39,9 +41,53 @@ impl Button {
         self
     }
 
+    pub fn size_xs(self) -> Self {
+        self.size(ButtonSizeKind::Xs)
+    }
+
+    pub fn size_xs_icon(self) -> Self {
+        self.size(ButtonSizeKind::XsIcon)
+    }
+
+    pub fn size_sm(self) -> Self {
+        self.size(ButtonSizeKind::Sm)
+    }
+
+    pub fn size_sm_icon(self) -> Self {
+        self.size(ButtonSizeKind::SmIcon)
+    }
+
+    pub fn size_md(self) -> Self {
+        self.size(ButtonSizeKind::Md)
+    }
+
+    pub fn size_md_icon(self) -> Self {
+        self.size(ButtonSizeKind::MdIcon)
+    }
+
+    pub fn size_lg(self) -> Self {
+        self.size(ButtonSizeKind::Lg)
+    }
+
+    pub fn size_lg_icon(self) -> Self {
+        self.size(ButtonSizeKind::LgIcon)
+    }
+
     pub fn variant(mut self, kind: ButtonVariantKind) -> Self {
         self.variant = kind;
         self
+    }
+
+    pub fn variant_primary(self) -> Self {
+        self.variant(ButtonVariantKind::Primary)
+    }
+
+    pub fn variant_secondary(self) -> Self {
+        self.variant(ButtonVariantKind::Secondary)
+    }
+
+    pub fn variant_outline(self) -> Self {
+        self.variant(ButtonVariantKind::Outline)
     }
 }
 
@@ -68,102 +114,190 @@ impl RenderOnce for Button {
             .font_weight(FontWeight::MEDIUM)
             .apply_kind(self.size, (window, theme))
             .apply_kind(self.variant, theme)
-            .children(self.children)
             .transitions(|transitions| {
                 transitions.bg(millis(200).with_easing(ease_in_out))
             })
+            .children(self.children)
             .refine(self.style)
     }
 }
 
-kinds!(pub ButtonSizeKind<(&Window, &Theme)> {
+impl Styled for Button {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.style
+    }
+}
+
+fn size_kind<E: Styled>(
+    this: E,
+    window: &Window,
+    theme: &Theme,
+    height: Rems,
+    text_size: Rems,
+    icon_size: Rems,
+    radius: Rems,
+    spacing: Pixels,
+) -> E {
+    this.rounded(radius)
+        .gap(spacing)
+        .px(spacing)
+        .py(window.padding_for_height(height, text_size, theme.line_height))
+        .text_size(text_size)
+        .select_children(class("icon"), |refinement| refinement.size(icon_size))
+}
+
+fn icon_size_kind<E: Styled>(
+    this: E,
+    theme: &Theme,
+    size: Rems,
+    text_size: Rems,
+    icon_size: Rems,
+    radius: Rems,
+) -> E {
+    this.rounded(radius)
+        .size(size)
+        .line_height(theme.line_height)
+        .text_size(text_size)
+        .select_children(class("icon"), |refinement| refinement.size(icon_size))
+}
+
+kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
     Xs (this, (window, theme)) => {
-        this
-            .rounded(theme.radii_md)
-            .px(px(8.))
-            .py(window.padding_for_height(
-                theme.size_sm,
-                theme.text_size_xs,
-                theme.line_height
-            ) - px(1.))
-            .text_size(theme.text_size_xs)
+        size_kind(
+            this,
+            window,
+            theme,
+            theme.size_lg,
+            theme.text_size_xs,
+            theme.size_3xs,
+            theme.radii_md,
+            px(8.),
+        )
+    },
+
+    XsIcon (this, (_window, theme)) => {
+        icon_size_kind(
+            this,
+            theme,
+            theme.size_lg,
+            theme.text_size_xs,
+            theme.size_3xs,
+            theme.radii_md,
+        )
     },
 
     Sm (this, (window, theme)) => {
-        this
-            .rounded(theme.radii_md)
-            .px(px(8.))
-            .py(window.padding_for_height(
-                theme.size_md,
-                theme.text_size_xs,
-                theme.line_height
-            ) - px(1.))
-            .text_size(theme.text_size_xs)
+        size_kind(
+            this,
+            window,
+            theme,
+            theme.size_xl,
+            theme.text_size_xs,
+            theme.size_2xs,
+            theme.radii_md,
+            px(10.),
+        )
+    },
+
+    SmIcon (this, (_window, theme)) => {
+        icon_size_kind(
+            this,
+            theme,
+            theme.size_xl,
+            theme.text_size_xs,
+            theme.size_2xs,
+            theme.radii_md,
+        )
     },
 
     #[default]
     Md (this, (window, theme)) => {
-        this
-            .rounded(theme.radii_lg)
-            .px(px(10.))
-            .py(window.padding_for_height(
-                theme.size_lg,
-                theme.text_size_sm,
-                theme.line_height
-            ) - px(1.))
-            .text_size(theme.text_size_sm)
+        size_kind(
+            this,
+            window,
+            theme,
+            theme.size_2xl,
+            theme.text_size_sm,
+            theme.size_xs,
+            theme.radii_lg,
+            px(10.),
+        )
+    },
+
+    MdIcon (this, (_window, theme)) => {
+        icon_size_kind(
+            this,
+            theme,
+            theme.size_2xl,
+            theme.text_size_sm,
+            theme.size_xs,
+            theme.radii_lg,
+        )
     },
 
     Lg (this, (window, theme)) => {
-        this
-            .rounded(theme.radii_lg)
-            .px(px(10.))
-            .py(window.padding_for_height(
-                theme.size_xl,
-                theme.text_size_sm,
-                theme.line_height
-            ) - px(1.))
-            .text_size(theme.text_size_sm)
-    }
+        size_kind(
+            this,
+            window,
+            theme,
+            theme.size_3xl,
+            theme.text_size_sm,
+            theme.size_xs,
+            theme.radii_lg,
+            px(10.),
+        )
+    },
+
+    LgIcon (this, (_window, theme)) => {
+        icon_size_kind(
+            this,
+            theme,
+            theme.size_3xl,
+            theme.text_size_sm,
+            theme.size_xs,
+            theme.radii_lg,
+        )
+    },
 });
 
-kinds!(pub ButtonVariantKind<&Theme> {
+fn fill_button_variant_kind<E>(this: E, theme: &Theme, bg_color: Oklaba) -> E
+where
+    E: Styled + StatefulInteractiveElement,
+{
+    let fg_color = theme.fg_for_bg(ThemeFgKind::Primary, bg_color);
+
+    this.bg(bg_color)
+        .text_color(fg_color)
+        .hover(|styles| styles.bg(theme.hover_color(bg_color)))
+        .active(|styles| styles.bg(theme.active_color(bg_color)))
+        .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
+}
+
+kinds!(pub ButtonVariantKind<_, &Theme> {
     #[default]
     Primary (this, theme) => {
-        this
-            .bg(theme.accent_primary)
-            .text_color(theme.fg_for_bg(ThemeFgKind::Primary, theme.accent_primary))
-            .hover(|styles| styles
-                .bg(theme.hover_color(theme.accent_primary))
-            )
-            .active(|styles| styles
-                .bg(theme.active_color(theme.accent_primary))
-            )
+        fill_button_variant_kind(this, theme, theme.accent_primary)
     },
 
     Secondary (this, theme) => {
-        this
-            .bg(theme.accent_secondary)
-            .text_color(theme.fg_for_bg(ThemeFgKind::Primary, theme.accent_secondary))
-            .hover(|styles| styles
-                .bg(theme.hover_color(theme.accent_secondary))
-            )
-            .active(|styles| styles
-                .bg(theme.active_color(theme.accent_secondary))
-            )
+        fill_button_variant_kind(this, theme, theme.accent_secondary)
     },
 
     Outline (this, theme) => {
+        let fg_color =
+            theme.fg_for_bg(ThemeFgKind::Primary, theme.bg_secondary);
+
         this
             .bg(theme.bg_secondary)
-            .border_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
-            .border_1()
-            .text_color(theme.fg_for_bg(ThemeFgKind::Primary, theme.bg_secondary))
+            .inset_ring_1()
+            .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
+            .text_color(fg_color)
             .hover(|styles| styles
                 .bg(theme.hover_color(theme.bg_secondary))
             )
             .active(|styles| styles
                 .bg(theme.active_color(theme.bg_secondary))
             )
+            .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
     }
 });

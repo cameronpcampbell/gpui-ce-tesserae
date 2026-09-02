@@ -25,7 +25,7 @@ pub trait WindowUtils {
     /// is snapped to the physical pixel grid.
     fn padding_for_height(
         &self,
-        target_height: Pixels,
+        target_height: impl Into<AbsoluteLength>,
         text_size: impl Into<AbsoluteLength>,
         line_height: impl Into<DefiniteLength>,
     ) -> Pixels;
@@ -34,12 +34,13 @@ pub trait WindowUtils {
 impl WindowUtils for Window {
     fn padding_for_height(
         &self,
-        target_height: Pixels,
+        target_height: impl Into<AbsoluteLength>,
         text_size: impl Into<AbsoluteLength>,
         line_height: impl Into<DefiniteLength>,
     ) -> Pixels {
         let rem_size = self.rem_size();
 
+        let target_height = target_height.into().to_pixels(rem_size);
         let text_size = text_size.into().to_pixels(rem_size);
         let line_height = self
             .pixel_snap(line_height.into().to_pixels(text_size.into(), rem_size));

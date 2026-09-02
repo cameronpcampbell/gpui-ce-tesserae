@@ -7,7 +7,7 @@ use crate::Kind;
 pub trait StyledElement:
     Element + Styled + StatefulInteractiveElement + Sized
 {
-    fn apply_kind<'a, K: Kind>(self, kind: K, data: K::Data<'a>) -> Self {
+    fn apply_kind<'a, K: Kind<Self>>(self, kind: K, data: K::Data<'a>) -> Self {
         kind.apply(self, data)
     }
 

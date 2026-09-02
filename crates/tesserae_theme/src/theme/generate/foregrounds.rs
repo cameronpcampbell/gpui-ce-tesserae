@@ -2,7 +2,7 @@ use std::array;
 
 use palette::{FromColor, Mix, Oklab, Oklch};
 
-const FOREGROUND_ACCENT_PRIMARY_MIX: f32 = 0.05;
+const FOREGROUND_BASE_COLOR_MIX: f32 = 0.05;
 
 const RAMP_INTERVAL_COUNT: f32 = 4.0;
 const LIGHT_FOREGROUND_LIGHTNESS_RANGE: f32 = 1.0;
@@ -11,7 +11,7 @@ const CHROMA_RANGE: f32 = 0.017;
 
 pub fn generate_foregrounds<const C: usize>(
     foreground_base: Oklab,
-    accent_primary: Oklab,
+    base_fg: Oklab,
 ) -> [Oklab; C] {
     let (foreground_base_chroma, foreground_base_hue) = {
         let foreground_base = Oklch::from_color(foreground_base);
@@ -36,6 +36,6 @@ pub fn generate_foregrounds<const C: usize>(
         let foreground =
             Oklab::from_color(Oklch::new(lightness, chroma, foreground_base_hue));
 
-        foreground.mix(accent_primary, FOREGROUND_ACCENT_PRIMARY_MIX)
+        foreground.mix(base_fg, FOREGROUND_BASE_COLOR_MIX)
     })
 }

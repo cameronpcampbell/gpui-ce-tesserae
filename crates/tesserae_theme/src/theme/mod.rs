@@ -1,8 +1,9 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
-use gpui::{App, DefiniteLength, Pixels, Rems, Rgba};
+use gpui::{App, DefiniteLength, Rems, Rgba};
 use palette::{
-    IntoColor, Mix, Oklaba, Srgba, color_difference::Wcag21RelativeContrast,
+    Clamp, IntoColor, Mix, Oklaba, Srgba, color_difference::Wcag21RelativeContrast,
+    convert::FromColorUnclamped,
 };
 
 use crate::{ThemeSetKind, ThemeSetKindState, ThemeSetState};
@@ -10,6 +11,13 @@ use crate::{ThemeSetKind, ThemeSetKindState, ThemeSetState};
 mod generate;
 pub use generate::ThemeConfig;
 use generate::generate_theme;
+
+pub fn color_from_hex<T: FromColorUnclamped<Rgba> + Clamp>(
+    hex_code: &str,
+) -> Result<T, <Rgba as FromStr>::Err> {
+    (Rgba::from_hex(hex_code) as Result<Rgba, <Rgba as FromStr>::Err>)
+        .map(|color| color.into_color())
+}
 
 #[derive(Clone)]
 pub struct Theme {
@@ -58,11 +66,15 @@ pub struct Theme {
     pub radii_3xl: Rems,
     pub radii_4xl: Rems,
 
-    pub size_xl: Pixels,
-    pub size_lg: Pixels,
-    pub size_md: Pixels,
-    pub size_sm: Pixels,
-    pub size_xs: Pixels,
+    pub size_3xl: Rems,
+    pub size_2xl: Rems,
+    pub size_xl: Rems,
+    pub size_lg: Rems,
+    pub size_md: Rems,
+    pub size_sm: Rems,
+    pub size_xs: Rems,
+    pub size_2xs: Rems,
+    pub size_3xs: Rems,
 }
 
 struct HexColor(Oklaba);
@@ -124,11 +136,15 @@ impl fmt::Debug for Theme {
             .field("radii_2xl", &self.radii_2xl)
             .field("radii_3xl", &self.radii_3xl)
             .field("radii_4xl", &self.radii_4xl)
+            .field("size_3xl", &self.size_3xl)
+            .field("size_2xl", &self.size_2xl)
             .field("size_xl", &self.size_xl)
             .field("size_lg", &self.size_lg)
             .field("size_md", &self.size_md)
             .field("size_sm", &self.size_sm)
             .field("size_xs", &self.size_xs)
+            .field("size_2xs", &self.size_2xs)
+            .field("size_3xs", &self.size_3xs)
             .finish()
     }
 }
@@ -261,13 +277,17 @@ impl Theme {
         }
     }
 
-    pub fn size(&self, kind: ThemeSizeKind) -> Pixels {
+    pub fn size(&self, kind: ThemeSizeKind) -> Rems {
         match kind {
+            ThemeSizeKind::X3s => self.size_3xs,
+            ThemeSizeKind::X2s => self.size_2xs,
             ThemeSizeKind::Xs => self.size_xs,
             ThemeSizeKind::Sm => self.size_sm,
             ThemeSizeKind::Md => self.size_md,
             ThemeSizeKind::Lg => self.size_lg,
             ThemeSizeKind::Xl => self.size_xl,
+            ThemeSizeKind::X2l => self.size_2xl,
+            ThemeSizeKind::X3l => self.size_3xl,
         }
     }
 }
@@ -337,9 +357,13 @@ pub enum ThemeRadiiKind {
 
 #[derive(Clone, Copy)]
 pub enum ThemeSizeKind {
+    X3s,
+    X2s,
     Xs,
     Sm,
     Md,
     Lg,
     Xl,
+    X2l,
+    X3l,
 }

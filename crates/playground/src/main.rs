@@ -1,8 +1,13 @@
 use button::{Button, ButtonSizeKind, ButtonVariantKind};
 use gpui::{
-    App, Bounds, KeyBinding, WindowOptions, actions, div, prelude::*, px, size,
+    App, Bounds, KeyBinding, WindowOptions, actions, div, prelude::*, px, size, svg,
 };
-use tesserae_theme::{Theme, ThemeConfig, ThemeSet, ThemeSetKind};
+use gpui_elements::editable_text::actions::{
+    DEFAULT_INPUT_CONTEXT, default_bindings,
+};
+use input::Input;
+use palette::Oklaba;
+use tesserae_theme::{Theme, ThemeConfig, ThemeSet, ThemeSetKind, color_from_hex};
 
 mod assets;
 use assets::Assets;
@@ -28,6 +33,7 @@ impl Render for Root {
             .justify_center()
             .items_center()
             .gap(px(10.))
+            .child(Input::new("input").w(px(290.)))
             .children(
                 [
                     ButtonVariantKind::Primary,
@@ -44,25 +50,69 @@ impl Render for Root {
                             Button::new(("button_xs", variant as usize))
                                 .size(ButtonSizeKind::Xs)
                                 .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                )
                                 .child("Extra Small"),
+                        )
+                        .child(
+                            Button::new(("icon_button_xs", variant as usize))
+                                .size(ButtonSizeKind::XsIcon)
+                                .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                ),
                         )
                         .child(
                             Button::new(("button_sm", variant as usize))
                                 .size(ButtonSizeKind::Sm)
                                 .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                )
                                 .child("Small"),
+                        )
+                        .child(
+                            Button::new(("icon_button_sm", variant as usize))
+                                .size(ButtonSizeKind::SmIcon)
+                                .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                ),
                         )
                         .child(
                             Button::new(("button_md", variant as usize))
                                 .size(ButtonSizeKind::Md)
                                 .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                )
                                 .child("Medium"),
+                        )
+                        .child(
+                            Button::new(("icon_button_md", variant as usize))
+                                .size(ButtonSizeKind::MdIcon)
+                                .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                ),
                         )
                         .child(
                             Button::new(("button_lg", variant as usize))
                                 .size(ButtonSizeKind::Lg)
                                 .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                )
                                 .child("Large"),
+                        )
+                        .child(
+                            Button::new(("icon_button_lg", variant as usize))
+                                .size(ButtonSizeKind::LgIcon)
+                                .variant(variant)
+                                .child(
+                                    svg().class("icon").path("icons/sparkles.svg"),
+                                ),
                         )
                 }),
             )
@@ -72,6 +122,7 @@ impl Render for Root {
 fn main() {
     gpui_platform::application().with_assets(Assets).run(|cx| {
         Assets::init(cx).ok();
+        cx.bind_keys(default_bindings().as_keybindings(Some(DEFAULT_INPUT_CONTEXT)));
 
         cx.open_window(
             WindowOptions {
@@ -84,7 +135,9 @@ fn main() {
             },
             |_window, cx| {
                 let theme_set = ThemeSet::generate(
-                    ThemeConfig::default().base_caution().base_fg().base_bg(),
+                    ThemeConfig::default()
+                        .base_fg(color_from_hex::<Oklaba>("6a41ffff").unwrap())
+                        .base_bg(color_from_hex::<Oklaba>("6a41ffff").unwrap()),
                 );
                 println!("{:#?}", theme_set.dark);
 

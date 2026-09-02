@@ -1,10 +1,8 @@
-use std::str::FromStr;
-
 use build_setters_macro::BuildSetters;
-use gpui::{DefiniteLength, Pixels, Rems, Rgba, px, relative, rems};
-use palette::{Clamp, IntoColor, Mix, Oklab, Oklaba, convert::FromColorUnclamped};
+use gpui::{DefiniteLength, Rems, relative, rems};
+use palette::{IntoColor, Mix, Oklab, Oklaba};
 
-use crate::{Theme, ThemeSetKind};
+use crate::{Theme, ThemeSetKind, color_from_hex};
 
 mod backgrounds;
 use backgrounds::generate_backgrounds;
@@ -32,13 +30,22 @@ const FOREGROUND_LIGHT_BASE: Oklab = Oklab::new(
 const BACKGROUND_SHADES: usize = 6;
 const FOREGROUND_SHADES: usize = 3;
 
-const SECONDARY_ACCENT_MIX: f32 = 0.17;
+const SECONDARY_ACCENT_MIX: f32 = 0.15;
+const SECONDARY_ACCENT_TINT_MIX: f32 = 0.08;
+
+fn mix_chroma(color: Oklaba, other: Oklaba, factor: f32) -> Oklaba {
+    color.mix(
+        Oklaba::new(color.color.l, other.color.a, other.color.b, color.alpha),
+        factor,
+    )
+}
 
 #[derive(BuildSetters, Clone)]
 pub struct ThemeConfig {
-    pub accent_primary: Oklaba,
-    pub accent_caution: Oklaba,
-    pub accent_destruct: Oklaba,
+    pub base_fg: Oklaba,
+    pub base_bg: Oklaba,
+    pub base_caution: Oklaba,
+    pub base_destruct: Oklaba,
 
     pub line_height: DefiniteLength,
 
@@ -65,26 +72,24 @@ pub struct ThemeConfig {
     pub radii_3xl: Rems,
     pub radii_4xl: Rems,
 
-    pub size_xl: Pixels,
-    pub size_lg: Pixels,
-    pub size_md: Pixels,
-    pub size_sm: Pixels,
-    pub size_xs: Pixels,
-}
-
-fn color_from_hex<T: FromColorUnclamped<Rgba> + Clamp>(
-    hex_code: &str,
-) -> Result<T, <Rgba as FromStr>::Err> {
-    (Rgba::from_hex(hex_code) as Result<Rgba, <Rgba as FromStr>::Err>)
-        .map(|color| color.into_color())
+    pub size_3xl: Rems,
+    pub size_2xl: Rems,
+    pub size_xl: Rems,
+    pub size_lg: Rems,
+    pub size_md: Rems,
+    pub size_sm: Rems,
+    pub size_xs: Rems,
+    pub size_2xs: Rems,
+    pub size_3xs: Rems,
 }
 
 impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
-            accent_primary: color_from_hex("3151EFFF").unwrap(),
-            accent_caution: color_from_hex("3151EFFF").unwrap(),
-            accent_destruct: color_from_hex("3151EFFF").unwrap(),
+            base_fg: color_from_hex("3151EFFF").unwrap(),
+            base_bg: color_from_hex("3151EFFF").unwrap(),
+            base_caution: color_from_hex("3151EFFF").unwrap(),
+            base_destruct: color_from_hex("3151EFFF").unwrap(),
 
             line_height: relative(1.618).into(),
 
@@ -111,11 +116,15 @@ impl Default for ThemeConfig {
             radii_3xl: rems(1.375),
             radii_4xl: rems(1.625),
 
-            size_xl: px(36.),
-            size_lg: px(32.),
-            size_md: px(28.),
-            size_sm: px(24.),
-            size_xs: px(20.),
+            size_3xl: rems(2.25),
+            size_2xl: rems(2.),
+            size_xl: rems(1.75),
+            size_lg: rems(1.5),
+            size_md: rems(1.25),
+            size_sm: rems(1.),
+            size_xs: rems(0.875),
+            size_2xs: rems(0.75),
+            size_3xs: rems(0.625),
         }
     }
 }
@@ -127,7 +136,7 @@ impl AsRef<ThemeConfig> for ThemeConfig {
 }
 
 pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
-    let (background_base, foreground_base, foreground_inverse_base) = match kind {
+    let (base_bg, base_fg, base_fg_inverse) = match kind {
         ThemeSetKind::Light => (
             BACKGROUND_LIGHT_BASE,
             FOREGROUND_LIGHT_BASE,
@@ -140,20 +149,21 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         ),
     };
 
-    let accent_primary: Oklab = config.accent_primary.color.into_color();
+    let base_fg_tint: Oklab = config.base_fg.color.into_color();
+    let base_bg_tint: Oklab = config.base_bg.color.into_color();
 
     let backgrounds =
-        generate_backgrounds::<BACKGROUND_SHADES>(background_base, accent_primary);
+        generate_backgrounds::<BACKGROUND_SHADES>(base_bg, base_bg_tint);
     let foregrounds =
-        generate_foregrounds::<FOREGROUND_SHADES>(foreground_base, accent_primary);
-    let foregrounds_inverse = generate_foregrounds::<FOREGROUND_SHADES>(
-        foreground_inverse_base,
-        accent_primary,
-    );
+        generate_foregrounds::<FOREGROUND_SHADES>(base_fg, base_fg_tint);
+    let foregrounds_inverse =
+        generate_foregrounds::<FOREGROUND_SHADES>(base_fg_inverse, base_fg_tint);
 
-    let foreground_primary = foregrounds[0];
-    let accent_secondary =
-        foreground_primary.mix(accent_primary, SECONDARY_ACCENT_MIX);
+    let accent_secondary = mix_chroma(
+        base_bg.mix(base_fg, SECONDARY_ACCENT_MIX).into_color(),
+        config.base_fg,
+        SECONDARY_ACCENT_TINT_MIX,
+    );
 
     Theme {
         bg_primary: backgrounds[0].into_color(),
@@ -163,7 +173,7 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         bg_quinary: backgrounds[4].into_color(),
         bg_senary: backgrounds[5].into_color(),
 
-        fg_primary: foreground_primary.into_color(),
+        fg_primary: foregrounds[0].into_color(),
         fg_secondary: foregrounds[1].into_color(),
         fg_tertiary: foregrounds[2].into_color(),
 
@@ -171,10 +181,10 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         fg_inverse_secondary: foregrounds_inverse[1].into_color(),
         fg_inverse_tertiary: foregrounds_inverse[2].into_color(),
 
-        accent_primary: config.accent_primary.into_color(),
-        accent_secondary: accent_secondary.into_color(),
-        accent_caution: config.accent_caution,
-        accent_destruct: config.accent_destruct,
+        accent_primary: config.base_fg,
+        accent_secondary,
+        accent_caution: config.base_caution,
+        accent_destruct: config.base_destruct,
 
         line_height: config.line_height,
 
@@ -201,10 +211,14 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         radii_3xl: config.radii_3xl,
         radii_4xl: config.radii_4xl,
 
+        size_3xl: config.size_3xl,
+        size_2xl: config.size_2xl,
         size_xl: config.size_xl,
         size_lg: config.size_lg,
         size_md: config.size_md,
         size_sm: config.size_sm,
         size_xs: config.size_xs,
+        size_2xs: config.size_2xs,
+        size_3xs: config.size_3xs,
     }
 }

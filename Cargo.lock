@@ -713,7 +713,6 @@ name = "button"
 version = "0.1.0"
 dependencies = [
  "gpui-ce",
- "gpui_ce_platform",
  "palette",
  "smallvec",
  "tesserae_theme",
@@ -1384,7 +1383,7 @@ dependencies = [
  "cc",
  "memchr",
  "rustc_version",
- "toml 1.1.4+spec-1.1.0",
+ "toml 1.1.5+spec-1.1.0",
  "vswhom",
  "winreg",
 ]
@@ -1995,7 +1994,7 @@ dependencies = [
 [[package]]
 name = "gpui-ce"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "accesskit",
  "anyhow",
@@ -2075,7 +2074,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_collections"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "gpui_ce_util",
  "indexmap",
@@ -2085,7 +2084,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_derive_refineable"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2093,9 +2092,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "gpui_ce_elements"
+version = "0.1.0"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
+dependencies = [
+ "gpui-ce",
+ "palette",
+ "smallvec",
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "gpui_ce_linux"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "accesskit",
  "accesskit_unix",
@@ -2117,6 +2127,7 @@ dependencies = [
  "itertools 0.14.0",
  "libc",
  "log",
+ "memfd",
  "notify-rust",
  "oo7",
  "open",
@@ -2145,7 +2156,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_macos"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -2194,7 +2205,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_macros"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2205,7 +2216,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_media"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -2220,7 +2231,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_parley"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "anyhow",
  "fontique",
@@ -2237,7 +2248,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_platform"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "console_error_panic_hook",
  "gpui-ce",
@@ -2250,7 +2261,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_refineable"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "gpui_ce_derive_refineable",
 ]
@@ -2258,7 +2269,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_scheduler"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "async-task",
  "backtrace",
@@ -2273,7 +2284,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_shared_string"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "schemars",
  "serde",
@@ -2283,7 +2294,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_sum_tree"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "heapless",
  "log",
@@ -2294,7 +2305,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_util"
 version = "0.2.6"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "anyhow",
  "log",
@@ -2304,7 +2315,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_web"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "anyhow",
  "console_error_panic_hook",
@@ -2327,7 +2338,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_wgpu"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -2352,7 +2363,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_windows"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#12c4d174a9e5d8c46843b3582b8cf970bed88154"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#f7c23358fd4155f53300815a3c3cee3d6d456820"
 dependencies = [
  "accesskit",
  "accesskit_windows",
@@ -2780,6 +2791,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "input"
+version = "0.1.0"
+dependencies = [
+ "gpui-ce",
+ "gpui_ce_elements",
+ "palette",
+ "tesserae_theme",
+ "tesserae_utils",
+]
+
+[[package]]
 name = "interpolate_name"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3164,6 +3186,15 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+
+[[package]]
+name = "memfd"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57804b2c9b69967f1536a56f86297e367a33b19e98852ed624b84551cdbc0d90"
+dependencies = [
+ "rustix 1.1.4",
+]
 
 [[package]]
 name = "memmap2"
@@ -3776,9 +3807,9 @@ dependencies = [
 
 [[package]]
 name = "open"
-version = "5.4.2"
+version = "5.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ade3be4664bc1ef537ce133015f04c176b737815c2ba9fd60edf212d6e90dd55"
+checksum = "7c603ab8300cf18bc3b14146b19fe3dfcc4843ae5a400cd0e7a30b95aa366634"
 dependencies = [
  "is-wsl",
  "libc",
@@ -4022,7 +4053,9 @@ version = "0.1.0"
 dependencies = [
  "button",
  "gpui-ce",
+ "gpui_ce_elements",
  "gpui_ce_platform",
+ "input",
  "palette",
  "rust-embed",
  "tesserae_theme",
@@ -5472,9 +5505,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "1.1.4+spec-1.1.0"
+version = "1.1.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3aace63f4bbcdfc2c965b059de67119c89c4017a70d633be6c104910f67056f5"
+checksum = "12c0ba9680044b4ce98d391a62094047eada0d64860b80166c39f4a6b5640785"
 dependencies = [
  "indexmap",
  "serde_core",

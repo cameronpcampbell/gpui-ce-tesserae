@@ -2,7 +2,7 @@ use std::array;
 
 use palette::{FromColor, Mix, Oklab, Oklch};
 
-const BACKGROUND_BASE_ACCENT_PRIMARY_MIX: f32 = 0.02;
+const BACKGROUND_BASE_COLOR_MIX: f32 = 0.02;
 
 const RAMP_INTERVAL_COUNT: f32 = 4.;
 const LIGHTNESS_RANGE: f32 = 0.225;
@@ -10,12 +10,11 @@ const CHROMA_RANGE: f32 = 0.02;
 
 pub fn generate_backgrounds<const C: usize>(
     background_base: Oklab,
-    accent_primary: Oklab,
+    base_bg: Oklab,
 ) -> [Oklab; C] {
-    let background =
-        background_base.mix(accent_primary, BACKGROUND_BASE_ACCENT_PRIMARY_MIX);
+    let background = background_base.mix(base_bg, BACKGROUND_BASE_COLOR_MIX);
 
-    let accent_hue = Oklch::from_color(accent_primary).hue.into_radians();
+    let base_bg_hue = Oklch::from_color(base_bg).hue.into_radians();
     let target_lightness = if background.l < 0.5 { 1.0 } else { 0.0 };
 
     array::from_fn(|index| {
@@ -30,8 +29,8 @@ pub fn generate_backgrounds<const C: usize>(
 
         Oklab::new(
             lightness,
-            background.a + chroma * accent_hue.cos(),
-            background.b + chroma * accent_hue.sin(),
+            background.a + chroma * base_bg_hue.cos(),
+            background.b + chroma * base_bg_hue.sin(),
         )
     })
 }

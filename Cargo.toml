@@ -6,6 +6,7 @@ members = [
   "crates/tesserae_cli",
   "crates/tesserae_theme",
   "crates/tesserae_registry/button",
+  "crates/tesserae_registry/input",
   "crates/playground",
 ]
 
@@ -17,6 +18,7 @@ tesserae_theme = { path = "crates/tesserae_theme" }
 
 gpui = { package = "gpui-ce", git = "https://github.com/gpui-ce/gpui-ce" }
 gpui_platform = { package = "gpui_ce_platform", git = "https://github.com/gpui-ce/gpui-ce" }
+gpui_elements = { package = "gpui_ce_elements", git = "https://github.com/gpui-ce/gpui-ce" }
 
 palette = "0.7"
 proc-macro2 = "1"
@@ -27,3 +29,4 @@ syn = { version = "2", features = ["full"] }
 [patch."https://github.com/gpui-ce/gpui-ce"]
 gpui = { package = "gpui-ce", git = "https://github.com/cameronpcampbell/gpui-ce", branch = "multiverse_crossover" }
 gpui_platform = { package = "gpui_ce_platform", git = "https://github.com/cameronpcampbell/gpui-ce", branch = "multiverse_crossover" }
+gpui_elements = { package = "gpui_ce_elements", git = "https://github.com/cameronpcampbell/gpui-ce", branch = "multiverse_crossover" }

@@ -6,9 +6,11 @@ edition = "2024"
 [dependencies]
 gpui.workspace = true
 gpui_platform.workspace = true
+gpui_elements.workspace = true
 palette.workspace = true
 
 tesserae_theme.workspace = true
 button = { path = "../tesserae_registry/button" }
+input = { path = "../tesserae_registry/input" }
 rust-embed = { version = "8.12.0", features = ["include-exclude"] }
 thiserror = "2.0.20"
