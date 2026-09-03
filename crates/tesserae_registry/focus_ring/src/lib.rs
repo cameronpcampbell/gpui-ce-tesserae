@@ -37,7 +37,6 @@ impl RenderOnce for FocusRing {
 
         div()
             .id(self.id)
-            .class("focus_ring")
             .absolute()
             .inset_0()
             .rounded_smoothing_1()

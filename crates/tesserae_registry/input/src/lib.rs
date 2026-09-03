@@ -2,8 +2,10 @@ use focus_ring::FocusRing;
 use gpui::{
     DurationWithEasing, ElementId, Focusable, FontWeight, InteractiveElement,
     IntoElement, Lerp, ParentElement, Pixels, Rems, RenderOnce, StyleRefinement,
-    Styled, Window, class, div, ease_in_out, millis, prelude::FluentBuilder, px,
-    relative,
+    Styled, Window, div, ease_in_out, millis,
+    prelude::FluentBuilder,
+    px, relative,
+    selectors::{class, tag},
 };
 use gpui_elements::editable_text::{EditableTextState, text_input};
 use palette::{IntoColor, Oklaba, WithAlpha};
@@ -134,7 +136,7 @@ fn size_kind<E: Styled>(
         .py(window.padding_for_height(height, text_size, theme.line_height))
         .text_size(text_size)
         .select_children(class("icon"), |refinement| refinement.size(icon_size))
-        .select_descendants(class("focus_ring"), |refinement| {
+        .select_descendants(tag::<FocusRing>(), |refinement| {
             refinement.rounded(radius)
         })
 }

@@ -1,8 +1,8 @@
 use gpui::{
     AnyElement, DurationWithEasing, ElementId, FontWeight, InteractiveElement,
     IntoElement, Lerp, ParentElement, Pixels, Rems, RenderOnce,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, class, div,
-    ease_in_out, millis, px,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, div, ease_in_out,
+    millis, px, selectors::class,
 };
 use palette::Oklaba;
 use tesserae_utils::{StyledElement, WindowUtils, kinds, use_focus_handle};
