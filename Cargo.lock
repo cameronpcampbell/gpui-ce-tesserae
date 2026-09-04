@@ -688,6 +688,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bubble"
+version = "0.1.0"
+dependencies = [
+ "gpui-ce",
+ "palette",
+ "smallvec",
+ "tesserae_theme",
+ "tesserae_utils",
+]
+
+[[package]]
 name = "build_setters_macro"
 version = "0.1.0"
 dependencies = [
@@ -1623,7 +1634,6 @@ version = "0.1.0"
 dependencies = [
  "gpui-ce",
  "palette",
- "smallvec",
  "tesserae_theme",
  "tesserae_utils",
 ]
@@ -4063,6 +4073,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 name = "playground"
 version = "0.1.0"
 dependencies = [
+ "bubble",
  "button",
  "gpui-ce",
  "gpui_ce_elements",

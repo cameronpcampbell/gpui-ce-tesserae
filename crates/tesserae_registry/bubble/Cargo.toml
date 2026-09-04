@@ -1,5 +1,5 @@
 [package]
-name = "focus_ring"
+name = "bubble"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,3 +8,4 @@ gpui.workspace = true
 tesserae_theme.workspace = true
 tesserae_utils.workspace = true
 palette.workspace = true
+smallvec.workspace = true

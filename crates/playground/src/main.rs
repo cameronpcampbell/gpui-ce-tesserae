@@ -1,3 +1,4 @@
+use bubble::Bubble;
 use button::{Button, ButtonSizeKind, ButtonVariantKind};
 use gpui::{
     App, Bounds, KeyBinding, WindowOptions, actions, div, prelude::*, px, size, svg,
@@ -116,6 +117,7 @@ impl Render for Root {
                         )
                 }),
             )
+            .child(Bubble::new("bubble").child("hello world"))
     }
 }
 

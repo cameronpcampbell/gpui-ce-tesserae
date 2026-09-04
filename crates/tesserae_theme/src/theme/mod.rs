@@ -58,6 +58,16 @@ pub struct Theme {
     pub text_size_8xl: Rems,
     pub text_size_9xl: Rems,
 
+    pub size_3xs: Rems,
+    pub size_2xs: Rems,
+    pub size_xs: Rems,
+    pub size_sm: Rems,
+    pub size_md: Rems,
+    pub size_lg: Rems,
+    pub size_xl: Rems,
+    pub size_2xl: Rems,
+    pub size_3xl: Rems,
+
     pub radii_xs: Rems,
     pub radii_sm: Rems,
     pub radii_md: Rems,
@@ -67,15 +77,15 @@ pub struct Theme {
     pub radii_3xl: Rems,
     pub radii_4xl: Rems,
 
-    pub size_3xl: Rems,
-    pub size_2xl: Rems,
-    pub size_xl: Rems,
-    pub size_lg: Rems,
-    pub size_md: Rems,
-    pub size_sm: Rems,
-    pub size_xs: Rems,
-    pub size_2xs: Rems,
-    pub size_3xs: Rems,
+    pub padding_5xl: Rems,
+    pub padding_4xl: Rems,
+    pub padding_3xl: Rems,
+    pub padding_2xl: Rems,
+    pub padding_xl: Rems,
+    pub padding_lg: Rems,
+    pub padding_md: Rems,
+    pub padding_sm: Rems,
+    pub padding_xs: Rems,
 }
 
 struct HexColor(Oklaba);
@@ -129,6 +139,15 @@ impl fmt::Debug for Theme {
             .field("text_size_7xl", &self.text_size_7xl)
             .field("text_size_8xl", &self.text_size_8xl)
             .field("text_size_9xl", &self.text_size_9xl)
+            .field("size_3xs", &self.size_3xs)
+            .field("size_2xs", &self.size_2xs)
+            .field("size_xs", &self.size_xs)
+            .field("size_sm", &self.size_sm)
+            .field("size_md", &self.size_md)
+            .field("size_lg", &self.size_lg)
+            .field("size_xl", &self.size_xl)
+            .field("size_2xl", &self.size_2xl)
+            .field("size_3xl", &self.size_3xl)
             .field("radii_xs", &self.radii_xs)
             .field("radii_sm", &self.radii_sm)
             .field("radii_md", &self.radii_md)
@@ -137,15 +156,6 @@ impl fmt::Debug for Theme {
             .field("radii_2xl", &self.radii_2xl)
             .field("radii_3xl", &self.radii_3xl)
             .field("radii_4xl", &self.radii_4xl)
-            .field("size_3xl", &self.size_3xl)
-            .field("size_2xl", &self.size_2xl)
-            .field("size_xl", &self.size_xl)
-            .field("size_lg", &self.size_lg)
-            .field("size_md", &self.size_md)
-            .field("size_sm", &self.size_sm)
-            .field("size_xs", &self.size_xs)
-            .field("size_2xs", &self.size_2xs)
-            .field("size_3xs", &self.size_3xs)
             .finish()
     }
 }

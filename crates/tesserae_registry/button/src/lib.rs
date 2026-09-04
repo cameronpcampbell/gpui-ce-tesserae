@@ -41,35 +41,35 @@ impl Button {
         self
     }
 
-    pub fn size_xs(self) -> Self {
+    pub fn xs(self) -> Self {
         self.size(ButtonSizeKind::Xs)
     }
 
-    pub fn size_xs_icon(self) -> Self {
+    pub fn xs_icon(self) -> Self {
         self.size(ButtonSizeKind::XsIcon)
     }
 
-    pub fn size_sm(self) -> Self {
+    pub fn sm(self) -> Self {
         self.size(ButtonSizeKind::Sm)
     }
 
-    pub fn size_sm_icon(self) -> Self {
+    pub fn sm_icon(self) -> Self {
         self.size(ButtonSizeKind::SmIcon)
     }
 
-    pub fn size_md(self) -> Self {
+    pub fn md(self) -> Self {
         self.size(ButtonSizeKind::Md)
     }
 
-    pub fn size_md_icon(self) -> Self {
+    pub fn md_icon(self) -> Self {
         self.size(ButtonSizeKind::MdIcon)
     }
 
-    pub fn size_lg(self) -> Self {
+    pub fn lg(self) -> Self {
         self.size(ButtonSizeKind::Lg)
     }
 
-    pub fn size_lg_icon(self) -> Self {
+    pub fn lg_icon(self) -> Self {
         self.size(ButtonSizeKind::LgIcon)
     }
 
@@ -78,15 +78,15 @@ impl Button {
         self
     }
 
-    pub fn variant_primary(self) -> Self {
+    pub fn primary(self) -> Self {
         self.variant(ButtonVariantKind::Primary)
     }
 
-    pub fn variant_secondary(self) -> Self {
+    pub fn secondary(self) -> Self {
         self.variant(ButtonVariantKind::Secondary)
     }
 
-    pub fn variant_outline(self) -> Self {
+    pub fn outline(self) -> Self {
         self.variant(ButtonVariantKind::Outline)
     }
 }

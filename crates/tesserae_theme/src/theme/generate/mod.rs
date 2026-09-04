@@ -81,6 +81,16 @@ pub struct ThemeConfig {
     pub size_xs: Rems,
     pub size_2xs: Rems,
     pub size_3xs: Rems,
+
+    pub padding_5xl: Rems,
+    pub padding_4xl: Rems,
+    pub padding_3xl: Rems,
+    pub padding_2xl: Rems,
+    pub padding_xl: Rems,
+    pub padding_lg: Rems,
+    pub padding_md: Rems,
+    pub padding_sm: Rems,
+    pub padding_xs: Rems,
 }
 
 impl Default for ThemeConfig {
@@ -125,6 +135,16 @@ impl Default for ThemeConfig {
             size_xs: rems(0.875),
             size_2xs: rems(0.75),
             size_3xs: rems(0.625),
+
+            padding_5xl: rems(1.25),
+            padding_4xl: rems(1.),
+            padding_3xl: rems(0.875),
+            padding_2xl: rems(0.75),
+            padding_xl: rems(0.625),
+            padding_lg: rems(0.5),
+            padding_md: rems(0.375),
+            padding_sm: rems(0.25),
+            padding_xs: rems(0.125),
         }
     }
 }
@@ -220,5 +240,15 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         size_xs: config.size_xs,
         size_2xs: config.size_2xs,
         size_3xs: config.size_3xs,
+
+        padding_5xl: config.padding_5xl,
+        padding_4xl: config.padding_4xl,
+        padding_3xl: config.padding_3xl,
+        padding_2xl: config.padding_2xl,
+        padding_xl: config.padding_xl,
+        padding_lg: config.padding_lg,
+        padding_md: config.padding_md,
+        padding_sm: config.padding_sm,
+        padding_xs: config.padding_xs,
     }
 }
