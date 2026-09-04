@@ -2,14 +2,12 @@ use focus_ring::FocusRing;
 use gpui::{
     DurationWithEasing, ElementId, Focusable, FontWeight, InteractiveElement,
     IntoElement, Lerp, ParentElement, Pixels, Rems, RenderOnce, StyleRefinement,
-    Styled, Window, div, ease_in_out, millis,
-    prelude::FluentBuilder,
-    px, relative,
-    selectors::{class, tag},
+    Styled, Window, div, ease_in_out, millis, prelude::FluentBuilder, px, relative,
+    selectors::class,
 };
 use gpui_elements::editable_text::{EditableTextState, text_input};
 use palette::{IntoColor, Oklaba, WithAlpha};
-use tesserae_utils::{StyledElement, WindowUtils, kinds};
+use tesserae_utils::{PerceptualColor, StyledElement, WindowUtils, kinds};
 
 use tesserae_theme::Theme;
 
@@ -36,11 +34,11 @@ impl Input {
         self
     }
 
-    pub fn size_md(self) -> Self {
+    pub fn md(self) -> Self {
         self.size(InputSizeKind::Md)
     }
 
-    pub fn size_lg(self) -> Self {
+    pub fn lg(self) -> Self {
         self.size(InputSizeKind::Lg)
     }
 
@@ -49,19 +47,19 @@ impl Input {
         self
     }
 
-    pub fn variant_primary(self) -> Self {
+    pub fn primary(self) -> Self {
         self.variant(InputVariantKind::Primary)
     }
 
-    pub fn variant_secondary(self) -> Self {
+    pub fn secondary(self) -> Self {
         self.variant(InputVariantKind::Secondary)
     }
 
-    pub fn variant_tertiary(self) -> Self {
+    pub fn tertiary(self) -> Self {
         self.variant(InputVariantKind::Tertiary)
     }
 
-    pub fn variant_quaternary(self) -> Self {
+    pub fn quaternary(self) -> Self {
         self.variant(InputVariantKind::Quaternary)
     }
 }
@@ -80,17 +78,31 @@ impl RenderOnce for Input {
         let theme = Theme::read_global(cx);
 
         div()
+            .id(self.id.clone())
             .rounded_smoothing_1()
             .inset_ring_1()
             .flex()
             .justify_center()
             .apply_kind(self.size, (window, theme))
-            .apply_kind(self.variant, theme)
+            .apply_kind(self.variant, (theme, focus_handle.is_focused(window)))
             .when(focus_handle.is_focused(window), |this| {
-                this.inset_ring_color(theme.accent_primary)
+                let inset_ring_color =
+                    theme.accent_primary.perceptual_brightness(0.5);
+
+                this.inset_ring_color(inset_ring_color).hover(|this| {
+                    this.inset_ring_color(theme.hover_feedback(inset_ring_color))
+                })
             })
+            .transitions(|transitions| {
+                transitions.inset_ring_color(millis(120).with_easing(ease_in_out))
+            })
+            .child(FocusRing::new(
+                (self.id.clone(), "focus_ring"),
+                focus_handle,
+            ))
             .child(
-                text_input(self.id.clone())
+                text_input((self.id, "input"))
+                    .class("input")
                     .state(input_state.downgrade())
                     .placeholder("Type here...")
                     .caret_blink_interval_500ms()
@@ -103,14 +115,8 @@ impl RenderOnce for Input {
                     .line_height(theme.line_height)
                     .font_family("Geist")
                     .font_weight(FontWeight::NORMAL)
-                    .transitions(|transitions| {
-                        transitions
-                            .bg(millis(200).with_easing(ease_in_out))
-                            .inset_ring_color(millis(120).with_easing(ease_in_out))
-                    })
                     .refine(self.style),
             )
-            .child(FocusRing::new((self.id, "focus_ring"), focus_handle))
     }
 }
 
@@ -136,7 +142,7 @@ fn size_kind<E: Styled>(
         .py(window.padding_for_height(height, text_size, theme.line_height))
         .text_size(text_size)
         .select_children(class("icon"), |refinement| refinement.size(icon_size))
-        .select_descendants(tag::<FocusRing>(), |refinement| {
+        .select_children(class("focus_ring"), |refinement| {
             refinement.rounded(radius)
         })
 }
@@ -170,39 +176,59 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
     },
 });
 
-fn variant_kind<E: Styled>(this: E, bg: Oklaba, ring_color: Oklaba) -> E {
-    this.bg(bg).inset_ring_color(ring_color)
+fn variant_kind<E: Styled + InteractiveElement + FluentBuilder>(
+    this: E,
+    theme: &Theme,
+    is_focused: bool,
+    bg: Oklaba,
+    ring_color: Oklaba,
+) -> E {
+    this.bg(bg)
+        .inset_ring_color(ring_color)
+        .when(!is_focused, |this| {
+            this.hover(|this| {
+                this.inset_ring_color(theme.hover_feedback(ring_color))
+            })
+        })
 }
 
-kinds!(pub InputVariantKind<_, &Theme> {
-    Primary (this, theme) => {
+kinds!(pub InputVariantKind<Styled + InteractiveElement + FluentBuilder, (&Theme, bool)> {
+    Primary (this, (theme, is_focused)) => {
         variant_kind(
             this,
+            theme,
+            is_focused,
             theme.bg_primary,
             theme.bg_secondary.lerp(&theme.bg_tertiary, 0.5),
         )
     },
 
-    Secondary (this, theme) => {
+    Secondary (this, (theme, is_focused)) => {
         variant_kind(
             this,
+            theme,
+            is_focused,
             theme.bg_secondary,
             theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5),
         )
     },
 
     #[default]
-    Tertiary (this, theme) => {
+    Tertiary (this, (theme, is_focused)) => {
         variant_kind(
             this,
+            theme,
+            is_focused,
             theme.bg_tertiary,
             theme.bg_quaternary.lerp(&theme.bg_quinary, 0.5),
         )
     },
 
-    Quaternary (this, theme) => {
+    Quaternary (this, (theme, is_focused)) => {
         variant_kind(
             this,
+            theme,
+            is_focused,
             theme.bg_quaternary,
             theme.bg_quinary.lerp(&theme.bg_senary, 0.5),
         )

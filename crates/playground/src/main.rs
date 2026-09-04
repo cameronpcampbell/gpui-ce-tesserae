@@ -136,7 +136,7 @@ fn main() {
             |_window, cx| {
                 let theme_set = ThemeSet::generate(
                     ThemeConfig::default()
-                        .base_fg(color_from_hex::<Oklaba>("6a41ffff").unwrap())
+                        //.base_fg(color_from_hex::<Oklaba>("6a41ffff").unwrap())
                         .base_bg(color_from_hex::<Oklaba>("6a41ffff").unwrap()),
                 );
                 println!("{:#?}", theme_set.dark);

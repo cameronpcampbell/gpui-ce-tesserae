@@ -7,3 +7,4 @@ edition = "2024"
 build_setters_macro.workspace = true
 gpui.workspace = true
 palette.workspace = true
+tesserae_utils.workspace = true

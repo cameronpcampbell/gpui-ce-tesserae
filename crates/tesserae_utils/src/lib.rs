@@ -1,10 +1,10 @@
+mod color;
 mod element;
-mod kinds;
+#[doc(hidden)]
+pub mod kinds;
 mod window;
 
+pub use color::{PerceptualColor, perceptual_contrast};
 pub use element::StyledElement;
 pub use kinds::Kind;
 pub use window::{WindowUtils, use_focus_handle};
-
-#[doc(hidden)]
-pub use gpui as __gpui;

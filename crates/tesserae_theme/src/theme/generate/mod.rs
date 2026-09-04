@@ -86,10 +86,10 @@ pub struct ThemeConfig {
 impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
-            base_fg: color_from_hex("3151EFFF").unwrap(),
-            base_bg: color_from_hex("3151EFFF").unwrap(),
-            base_caution: color_from_hex("3151EFFF").unwrap(),
-            base_destruct: color_from_hex("3151EFFF").unwrap(),
+            base_fg: color_from_hex("E5E5E5FF").unwrap(),
+            base_bg: color_from_hex("020617FF").unwrap(),
+            base_caution: color_from_hex("EAB308FF").unwrap(),
+            base_destruct: color_from_hex("B91C1CFF").unwrap(),
 
             line_height: relative(1.618).into(),
 

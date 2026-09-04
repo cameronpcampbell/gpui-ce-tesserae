@@ -2,9 +2,10 @@ use std::{fmt, str::FromStr};
 
 use gpui::{App, DefiniteLength, Rems, Rgba};
 use palette::{
-    Clamp, IntoColor, Mix, Oklaba, Srgba, color_difference::Wcag21RelativeContrast,
+    Clamp, IntoColor, Oklaba, Srgba, color_difference::Wcag21RelativeContrast,
     convert::FromColorUnclamped,
 };
+use tesserae_utils::PerceptualColor;
 
 use crate::{ThemeSetKind, ThemeSetKindState, ThemeSetState};
 
@@ -150,8 +151,8 @@ impl fmt::Debug for Theme {
 }
 
 impl Theme {
-    const HOVER_COLOR_MIX: f32 = 0.03;
-    const ACTIVE_COLOR_MIX: f32 = 0.05;
+    const HOVER_FEEDBACK: f32 = 0.07;
+    const ACTIVE_FEEDBACK: f32 = 0.14;
 
     pub fn read_global(cx: &App) -> &Theme {
         let theme_set_kind = *cx.global::<ThemeSetKindState>().0.read(cx);
@@ -211,30 +212,39 @@ impl Theme {
         }
     }
 
-    pub fn interact_color(
-        &self,
-        color: impl IntoColor<Oklaba>,
-        factor: f32,
-    ) -> Oklaba {
+    pub fn hover_feedback(&self, color: impl IntoColor<Oklaba>) -> Oklaba {
         let color = color.into_color();
+        let amount = self.feedback_direction(color) * Self::HOVER_FEEDBACK;
 
-        let target = if contrast_ratio(color, self.bg_primary)
-            <= contrast_ratio(color, self.fg_primary)
-        {
+        color.perceptual_feedback(amount, self.bg_primary)
+    }
+
+    pub fn active_feedback(&self, color: impl IntoColor<Oklaba>) -> Oklaba {
+        let color = color.into_color();
+        let amount = self.feedback_direction(color) * Self::ACTIVE_FEEDBACK;
+
+        color.perceptual_feedback(amount, self.bg_primary)
+    }
+
+    fn feedback_direction(&self, color: Oklaba) -> f32 {
+        let foreground_contrast = contrast_ratio(color, self.fg_primary);
+        let background_contrast = contrast_ratio(color, self.bg_primary);
+        let target = if foreground_contrast >= background_contrast {
             self.fg_primary
         } else {
             self.bg_primary
         };
+        let lightness_difference = target.color.l - color.color.l;
 
-        color.mix(target, factor)
-    }
-
-    pub fn hover_color(&self, color: impl IntoColor<Oklaba>) -> Oklaba {
-        self.interact_color(color, Self::HOVER_COLOR_MIX)
-    }
-
-    pub fn active_color(&self, color: impl IntoColor<Oklaba>) -> Oklaba {
-        self.interact_color(color, Self::ACTIVE_COLOR_MIX)
+        if lightness_difference > f32::EPSILON {
+            1.0
+        } else if lightness_difference < -f32::EPSILON {
+            -1.0
+        } else if color.color.l <= 0.5 {
+            1.0
+        } else {
+            -1.0
+        }
     }
 
     pub fn accent(&self, kind: ThemeAccentKind) -> Oklaba {
@@ -366,4 +376,103 @@ pub enum ThemeSizeKind {
     Xl,
     X2l,
     X3l,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tesserae_utils::perceptual_contrast;
+
+    fn assert_close(actual: f32, expected: f32) {
+        assert!((actual - expected).abs() < 1e-6);
+    }
+
+    #[test]
+    fn feedback_is_visible_for_theme_colors_and_lightness_extremes() {
+        for kind in [ThemeSetKind::Light, ThemeSetKind::Dark] {
+            let theme = Theme::generate(&ThemeConfig::default(), kind);
+
+            for (color, expected_direction) in [
+                (Oklaba::new(0.0, 0.0, 0.0, 0.4), Some(1.0)),
+                (theme.bg_primary, None),
+                (theme.bg_tertiary, None),
+                (theme.accent_caution, None),
+                (theme.fg_primary, None),
+                (Oklaba::new(1.0, 0.0, 0.0, 0.6), Some(-1.0)),
+            ] {
+                let hover = theme.hover_feedback(color);
+                let active = theme.active_feedback(color);
+                let hover_change = (hover.color.l - color.color.l).abs();
+                let active_change = (active.color.l - color.color.l).abs();
+
+                assert!(hover_change > 0.0);
+                assert!(active_change > hover_change);
+                if let Some(expected_direction) = expected_direction {
+                    assert!(
+                        (hover.color.l - color.color.l) * expected_direction > 0.0
+                    );
+                }
+
+                for adjusted in [hover, active] {
+                    assert_close(adjusted.color.a, color.color.a);
+                    assert_close(adjusted.color.b, color.color.b);
+                    assert_close(adjusted.alpha, color.alpha);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn feedback_keeps_theme_foregrounds_readable() {
+        for kind in [ThemeSetKind::Light, ThemeSetKind::Dark] {
+            let theme = Theme::generate(&ThemeConfig::default(), kind);
+
+            for background in [
+                theme.bg_primary,
+                theme.bg_secondary,
+                theme.bg_tertiary,
+                theme.bg_quaternary,
+                theme.bg_quinary,
+                theme.bg_senary,
+            ] {
+                let foreground = theme.fg_for_bg(ThemeFgKind::Primary, background);
+
+                for adjusted in [
+                    theme.hover_feedback(background),
+                    theme.active_feedback(background),
+                ] {
+                    assert!(contrast_ratio(foreground, adjusted) >= 4.5);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn primary_and_secondary_buttons_have_balanced_feedback() {
+        for kind in [ThemeSetKind::Light, ThemeSetKind::Dark] {
+            let theme = Theme::generate(&ThemeConfig::default(), kind);
+            let perceived_step = |color: Oklaba, adjusted: Oklaba| {
+                (perceptual_contrast(adjusted, theme.bg_primary)
+                    - perceptual_contrast(color, theme.bg_primary))
+                .abs()
+            };
+
+            for (feedback, expected) in [
+                (
+                    Theme::hover_feedback as fn(&Theme, Oklaba) -> Oklaba,
+                    Theme::HOVER_FEEDBACK,
+                ),
+                (Theme::active_feedback, Theme::ACTIVE_FEEDBACK),
+            ] {
+                for accent in [theme.accent_primary, theme.accent_secondary] {
+                    let step = perceived_step(accent, feedback(&theme, accent));
+
+                    assert!(
+                        (step - expected).abs() < 1e-4,
+                        "perceived feedback step {step} is not {expected}",
+                    );
+                }
+            }
+        }
+    }
 }

@@ -4,7 +4,7 @@ use gpui::{
     prelude::FluentBuilder, px,
 };
 use palette::WithAlpha;
-use tesserae_utils::StyledElement;
+use tesserae_utils::{PerceptualColor, StyledElement};
 
 use tesserae_theme::Theme;
 
@@ -34,14 +34,16 @@ impl RenderOnce for FocusRing {
         cx: &mut gpui::App,
     ) -> impl gpui::IntoElement {
         let theme = Theme::read_global(cx);
+        let focus_ring_color = theme.accent_primary.perceptual_alpha(0.15);
 
         div()
             .id(self.id)
+            .class("focus_ring")
             .absolute()
             .inset_0()
             .rounded_smoothing_1()
             .ring(self.thickness)
-            .ring_color(theme.accent_primary.with_alpha(0.))
+            .ring_color(focus_ring_color.with_alpha(0.))
             .inset(px(-6.))
             .refine(self.style)
             .transitions(|transitions| {
@@ -51,8 +53,7 @@ impl RenderOnce for FocusRing {
                     .rounded(millis(120).with_easing(ease_in_out))
             })
             .when(self.focus_handle.is_focused(window), |ring| {
-                ring.inset_0()
-                    .ring_color(theme.accent_primary.with_alpha(0.3))
+                ring.inset_0().ring_color(focus_ring_color)
             })
     }
 }

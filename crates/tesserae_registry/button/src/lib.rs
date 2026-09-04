@@ -268,8 +268,8 @@ where
 
     this.bg(bg_color)
         .text_color(fg_color)
-        .hover(|styles| styles.bg(theme.hover_color(bg_color)))
-        .active(|styles| styles.bg(theme.active_color(bg_color)))
+        .hover(|styles| styles.bg(theme.hover_feedback(bg_color)))
+        .active(|styles| styles.bg(theme.active_feedback(bg_color)))
         .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
 }
 
@@ -293,10 +293,10 @@ kinds!(pub ButtonVariantKind<Styled + StatefulInteractiveElement, &Theme> {
             .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
             .text_color(fg_color)
             .hover(|styles| styles
-                .bg(theme.hover_color(theme.bg_secondary))
+                .bg(theme.hover_feedback(theme.bg_secondary))
             )
             .active(|styles| styles
-                .bg(theme.active_color(theme.bg_secondary))
+                .bg(theme.active_feedback(theme.bg_secondary))
             )
             .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
     }

@@ -1,4 +1,9 @@
-use gpui::Styled;
+#[doc(hidden)]
+pub mod __macro_exports {
+    pub use gpui::Styled;
+}
+
+use __macro_exports::Styled;
 
 pub trait Kind<E: Styled> {
     type Data<'a>;
@@ -17,7 +22,7 @@ macro_rules! kinds {
             @collect
             [
                 @impl generic [
-                    $crate::__gpui::Styled
+                    $crate::kinds::__macro_exports::Styled
                 ] $visibility $kind_name
             ]
             []
@@ -32,7 +37,7 @@ macro_rules! kinds {
     ) => {
         $crate::kinds! {
             @impl generic [
-                $crate::__gpui::Styled
+                $crate::kinds::__macro_exports::Styled
             ] $visibility $kind_name [&'data $data_type] {
                 $($kinds)*
             }
@@ -45,7 +50,7 @@ macro_rules! kinds {
     ) => {
         $crate::kinds! {
             @impl generic [
-                $crate::__gpui::Styled
+                $crate::kinds::__macro_exports::Styled
             ] $visibility $kind_name [$data_type] {
                 $($kinds)*
             }
