@@ -154,9 +154,9 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_2xl,
+            theme.size_4xl,
             theme.text_size_sm,
-            theme.size_xs,
+            theme.size_md,
             theme.radii_lg,
             px(10.),
         )
@@ -167,9 +167,9 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_3xl,
+            theme.size_5xl,
             theme.text_size_sm,
-            theme.size_xs,
+            theme.size_md,
             theme.radii_lg,
             px(10.),
         )

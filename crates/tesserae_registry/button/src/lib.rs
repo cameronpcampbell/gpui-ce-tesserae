@@ -167,9 +167,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_lg,
+            theme.size_2xl,
             theme.text_size_xs,
-            theme.size_3xs,
+            theme.size_xs,
             theme.radii_md,
             px(8.),
         )
@@ -179,9 +179,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_lg,
+            theme.size_2xl,
             theme.text_size_xs,
-            theme.size_3xs,
+            theme.size_xs,
             theme.radii_md,
         )
     },
@@ -191,9 +191,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_xl,
+            theme.size_3xl,
             theme.text_size_xs,
-            theme.size_2xs,
+            theme.size_sm,
             theme.radii_md,
             px(10.),
         )
@@ -203,9 +203,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_xl,
+            theme.size_3xl,
             theme.text_size_xs,
-            theme.size_2xs,
+            theme.size_sm,
             theme.radii_md,
         )
     },
@@ -216,9 +216,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_2xl,
+            theme.size_4xl,
             theme.text_size_sm,
-            theme.size_xs,
+            theme.size_md,
             theme.radii_lg,
             px(10.),
         )
@@ -228,9 +228,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_2xl,
+            theme.size_4xl,
             theme.text_size_sm,
-            theme.size_xs,
+            theme.size_md,
             theme.radii_lg,
         )
     },
@@ -240,9 +240,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_3xl,
+            theme.size_5xl,
             theme.text_size_sm,
-            theme.size_xs,
+            theme.size_md,
             theme.radii_lg,
             px(10.),
         )
@@ -252,9 +252,9 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_3xl,
+            theme.size_5xl,
             theme.text_size_sm,
-            theme.size_xs,
+            theme.size_md,
             theme.radii_lg,
         )
     },

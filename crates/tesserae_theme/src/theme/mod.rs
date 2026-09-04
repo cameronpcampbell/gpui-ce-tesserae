@@ -58,8 +58,6 @@ pub struct Theme {
     pub text_size_8xl: Rems,
     pub text_size_9xl: Rems,
 
-    pub size_3xs: Rems,
-    pub size_2xs: Rems,
     pub size_xs: Rems,
     pub size_sm: Rems,
     pub size_md: Rems,
@@ -67,6 +65,8 @@ pub struct Theme {
     pub size_xl: Rems,
     pub size_2xl: Rems,
     pub size_3xl: Rems,
+    pub size_4xl: Rems,
+    pub size_5xl: Rems,
 
     pub radii_xs: Rems,
     pub radii_sm: Rems,
@@ -139,8 +139,6 @@ impl fmt::Debug for Theme {
             .field("text_size_7xl", &self.text_size_7xl)
             .field("text_size_8xl", &self.text_size_8xl)
             .field("text_size_9xl", &self.text_size_9xl)
-            .field("size_3xs", &self.size_3xs)
-            .field("size_2xs", &self.size_2xs)
             .field("size_xs", &self.size_xs)
             .field("size_sm", &self.size_sm)
             .field("size_md", &self.size_md)
@@ -148,6 +146,8 @@ impl fmt::Debug for Theme {
             .field("size_xl", &self.size_xl)
             .field("size_2xl", &self.size_2xl)
             .field("size_3xl", &self.size_3xl)
+            .field("size_4xl", &self.size_4xl)
+            .field("size_5xl", &self.size_5xl)
             .field("radii_xs", &self.radii_xs)
             .field("radii_sm", &self.radii_sm)
             .field("radii_md", &self.radii_md)
@@ -183,6 +183,16 @@ impl Theme {
             ThemeBgKind::Quaternary => self.bg_quaternary,
             ThemeBgKind::Quinary => self.bg_quinary,
             ThemeBgKind::Senary => self.bg_senary,
+        }
+    }
+
+    pub fn bg_border(&self, kind: ThemeBgBorderKind) -> Oklaba {
+        match kind {
+            ThemeBgBorderKind::Primary => self.bg_secondary,
+            ThemeBgBorderKind::Secondary => self.bg_tertiary,
+            ThemeBgBorderKind::Tertiary => self.bg_quaternary,
+            ThemeBgBorderKind::Quaternary => self.bg_quinary,
+            ThemeBgBorderKind::Quinary => self.bg_senary,
         }
     }
 
@@ -299,8 +309,6 @@ impl Theme {
 
     pub fn size(&self, kind: ThemeSizeKind) -> Rems {
         match kind {
-            ThemeSizeKind::X3s => self.size_3xs,
-            ThemeSizeKind::X2s => self.size_2xs,
             ThemeSizeKind::Xs => self.size_xs,
             ThemeSizeKind::Sm => self.size_sm,
             ThemeSizeKind::Md => self.size_md,
@@ -308,6 +316,22 @@ impl Theme {
             ThemeSizeKind::Xl => self.size_xl,
             ThemeSizeKind::X2l => self.size_2xl,
             ThemeSizeKind::X3l => self.size_3xl,
+            ThemeSizeKind::X4l => self.size_4xl,
+            ThemeSizeKind::X5l => self.size_5xl,
+        }
+    }
+
+    pub fn padding(&self, kind: ThemePaddingKind) -> Rems {
+        match kind {
+            ThemePaddingKind::Xs => self.padding_xs,
+            ThemePaddingKind::Sm => self.padding_sm,
+            ThemePaddingKind::Md => self.padding_md,
+            ThemePaddingKind::Lg => self.padding_lg,
+            ThemePaddingKind::Xl => self.padding_xl,
+            ThemePaddingKind::X2l => self.padding_2xl,
+            ThemePaddingKind::X3l => self.padding_3xl,
+            ThemePaddingKind::X4l => self.padding_4xl,
+            ThemePaddingKind::X5l => self.padding_5xl,
         }
     }
 }
@@ -377,8 +401,6 @@ pub enum ThemeRadiiKind {
 
 #[derive(Clone, Copy)]
 pub enum ThemeSizeKind {
-    X3s,
-    X2s,
     Xs,
     Sm,
     Md,
@@ -386,6 +408,21 @@ pub enum ThemeSizeKind {
     Xl,
     X2l,
     X3l,
+    X4l,
+    X5l,
+}
+
+#[derive(Clone, Copy)]
+pub enum ThemePaddingKind {
+    Xs,
+    Sm,
+    Md,
+    Lg,
+    Xl,
+    X2l,
+    X3l,
+    X4l,
+    X5l,
 }
 
 #[cfg(test)]
