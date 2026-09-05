@@ -67,6 +67,7 @@ pub struct Theme {
     pub size_3xl: Rems,
     pub size_4xl: Rems,
     pub size_5xl: Rems,
+    pub size_6xl: Rems,
 
     pub knob_ratio: Relative,
 
@@ -79,15 +80,15 @@ pub struct Theme {
     pub radii_3xl: Rems,
     pub radii_4xl: Rems,
 
-    pub padding_5xl: Rems,
-    pub padding_4xl: Rems,
-    pub padding_3xl: Rems,
-    pub padding_2xl: Rems,
-    pub padding_xl: Rems,
-    pub padding_lg: Rems,
-    pub padding_md: Rems,
-    pub padding_sm: Rems,
     pub padding_xs: Rems,
+    pub padding_sm: Rems,
+    pub padding_md: Rems,
+    pub padding_lg: Rems,
+    pub padding_xl: Rems,
+    pub padding_2xl: Rems,
+    pub padding_3xl: Rems,
+    pub padding_4xl: Rems,
+    pub padding_5xl: Rems,
 }
 
 struct HexColor(Oklaba);
@@ -150,6 +151,7 @@ impl fmt::Debug for Theme {
             .field("size_3xl", &self.size_3xl)
             .field("size_4xl", &self.size_4xl)
             .field("size_5xl", &self.size_5xl)
+            .field("size_6xl", &self.size_6xl)
             .field("radii_xs", &self.radii_xs)
             .field("radii_sm", &self.radii_sm)
             .field("radii_md", &self.radii_md)
@@ -158,15 +160,15 @@ impl fmt::Debug for Theme {
             .field("radii_2xl", &self.radii_2xl)
             .field("radii_3xl", &self.radii_3xl)
             .field("radii_4xl", &self.radii_4xl)
-            .field("padding_5xl", &self.padding_5xl)
-            .field("padding_4xl", &self.padding_4xl)
-            .field("padding_3xl", &self.padding_3xl)
-            .field("padding_2xl", &self.padding_2xl)
-            .field("padding_xl", &self.padding_xl)
-            .field("padding_lg", &self.padding_lg)
-            .field("padding_md", &self.padding_md)
-            .field("padding_sm", &self.padding_sm)
             .field("padding_xs", &self.padding_xs)
+            .field("padding_sm", &self.padding_sm)
+            .field("padding_md", &self.padding_md)
+            .field("padding_lg", &self.padding_lg)
+            .field("padding_xl", &self.padding_xl)
+            .field("padding_2xl", &self.padding_2xl)
+            .field("padding_3xl", &self.padding_3xl)
+            .field("padding_4xl", &self.padding_4xl)
+            .field("padding_5xl", &self.padding_5xl)
             .finish()
     }
 }
@@ -329,6 +331,7 @@ impl Theme {
             ThemeSizeKind::X3l => self.size_3xl,
             ThemeSizeKind::X4l => self.size_4xl,
             ThemeSizeKind::X5l => self.size_5xl,
+            ThemeSizeKind::X6l => self.size_6xl,
         }
     }
 
@@ -421,6 +424,7 @@ pub enum ThemeSizeKind {
     X3l,
     X4l,
     X5l,
+    X6l,
 }
 
 #[derive(Clone, Copy)]

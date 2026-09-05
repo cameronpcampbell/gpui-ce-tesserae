@@ -52,7 +52,7 @@ impl RenderOnce for Bubble {
             .line_height(theme.line_height)
             .px(px(10.))
             .py(window.padding_for_height(
-                theme.size_5xl,
+                theme.size_6xl,
                 theme.text_size_sm,
                 theme.line_height,
             ) - px(2.))

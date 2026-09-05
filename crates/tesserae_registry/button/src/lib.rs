@@ -1,11 +1,13 @@
 use gpui::{
     AnyElement, DurationWithEasing, ElementId, FontWeight, InteractiveElement,
-    IntoElement, Lerp, ParentElement, Pixels, Rems, RenderOnce,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, div, ease_in_out,
-    millis, px, selectors::class,
+    IntoElement, Lerp, ParentElement, Rems, RenderOnce, StatefulInteractiveElement,
+    StyleRefinement, Styled, Window, div, ease_in_out, linear_color_stop,
+    linear_gradient, millis, selectors::class,
 };
-use palette::Oklaba;
-use tesserae_utils::{StyledElement, WindowUtils, kinds, use_focus_handle};
+use palette::{Oklaba, WithAlpha};
+use tesserae_utils::{
+    PerceptualColor, StyledElement, WindowUtils, kinds, use_focus_handle,
+};
 
 use smallvec::SmallVec;
 use tesserae_theme::{Theme, ThemeFgKind};
@@ -167,7 +169,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_2xl,
+            theme.size_3xl,
             theme.text_size_xs,
             theme.size_xs,
             theme.radii_md,
@@ -179,7 +181,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_2xl,
+            theme.size_3xl,
             theme.text_size_xs,
             theme.size_xs,
             theme.radii_md,
@@ -191,7 +193,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_3xl,
+            theme.size_4xl,
             theme.text_size_xs,
             theme.size_sm,
             theme.radii_md,
@@ -203,7 +205,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_3xl,
+            theme.size_4xl,
             theme.text_size_xs,
             theme.size_sm,
             theme.radii_md,
@@ -216,7 +218,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_4xl,
+            theme.size_5xl,
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
@@ -228,7 +230,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_4xl,
+            theme.size_5xl,
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
@@ -240,7 +242,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             this,
             window,
             theme,
-            theme.size_5xl,
+            theme.size_6xl,
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
@@ -252,7 +254,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
         icon_size_kind(
             this,
             theme,
-            theme.size_5xl,
+            theme.size_6xl,
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
@@ -270,6 +272,12 @@ where
         .text_color(fg_color)
         .hover(|styles| styles.bg(theme.hover_feedback(bg_color)))
         .active(|styles| styles.bg(theme.active_feedback(bg_color)))
+        .inset_ring_1()
+        .inset_ring_color(linear_gradient(
+            180.,
+            linear_color_stop(theme.fg_primary.perceptual_alpha(0.08), 0.),
+            linear_color_stop(theme.fg_primary.with_alpha(0.), 0.8),
+        ))
         .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
 }
 

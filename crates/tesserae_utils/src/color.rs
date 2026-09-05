@@ -92,6 +92,17 @@ fn nudge_lightness(lightness: f32, surround_lightness: f32, amount: f32) -> f32 
 
 /// Perceptual controls that adjust colors in OKLab and return the input type.
 pub trait PerceptualColor: Sized {
+    /// Returns the candidate with the greatest perceptual contrast against this color.
+    ///
+    /// When multiple candidates have the same contrast, this returns the first one.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `candidates` is empty.
+    fn best_contrast<C, const N: usize>(self, candidates: [C; N]) -> C
+    where
+        C: Clone + IntoColor<Oklaba>;
+
     /// Applies a perceptual alpha to the color using its lightness and chroma.
     fn perceptual_alpha(self, desired_alpha: f32) -> Self;
 
@@ -110,6 +121,34 @@ impl<C> PerceptualColor for C
 where
     C: Clone + IntoColor<Oklaba> + FromColor<Oklaba> + WithAlpha<f32, WithAlpha = C>,
 {
+    fn best_contrast<T, const N: usize>(self, candidates: [T; N]) -> T
+    where
+        T: Clone + IntoColor<Oklaba>,
+    {
+        let base: Oklaba = self.into_color();
+        let mut candidates = candidates.into_iter();
+        let first = candidates
+            .next()
+            .expect("best_contrast requires at least one candidate");
+
+        let contrast = |candidate: &T| {
+            let candidate: Oklaba = candidate.clone().into_color();
+            perceived_contrast(candidate.color.l, base.color.l).abs()
+        };
+        let first_contrast = contrast(&first);
+
+        candidates
+            .fold((first, first_contrast), |best, candidate| {
+                let candidate_contrast = contrast(&candidate);
+                if candidate_contrast > best.1 {
+                    (candidate, candidate_contrast)
+                } else {
+                    best
+                }
+            })
+            .0
+    }
+
     fn perceptual_alpha(self, desired_alpha: f32) -> Self {
         let perceptual_color = self.clone().into_color();
         let magnitude = perceptual_magnitude(&perceptual_color);
@@ -231,6 +270,26 @@ mod tests {
             perceptual_contrast(chromatic, gray(0.3)),
             perceptual_contrast(gray(0.6), gray(0.3)),
         );
+    }
+
+    #[test]
+    fn best_contrast_returns_the_candidate_farthest_from_the_base() {
+        assert_eq!(gray(0.2).best_contrast([gray(0.1), WHITE]), WHITE);
+        assert_eq!(gray(0.8).best_contrast([BLACK, gray(0.9)]), BLACK);
+    }
+
+    #[test]
+    fn best_contrast_preserves_the_candidate_type_and_breaks_ties_by_order() {
+        let first = Srgba::new(0.8, 0.4, 0.2, 0.3);
+        let second = Srgba::new(0.8, 0.4, 0.2, 0.9);
+
+        assert_eq!(BLACK.best_contrast([first, second]), first);
+    }
+
+    #[test]
+    #[should_panic(expected = "best_contrast requires at least one candidate")]
+    fn best_contrast_rejects_an_empty_candidate_array() {
+        let _: Oklaba = BLACK.best_contrast([]);
     }
 
     #[test]

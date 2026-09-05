@@ -8,6 +8,7 @@ use gpui_elements::editable_text::actions::{
 };
 use input::Input;
 use palette::Oklaba;
+use switch::Switch;
 use tesserae_theme::{Theme, ThemeConfig, ThemeSet, ThemeSetKind, color_from_hex};
 
 mod assets;
@@ -33,7 +34,7 @@ impl Render for Root {
             .flex_col()
             .justify_center()
             .items_center()
-            .gap(px(10.))
+            .gap(px(50.))
             .child(Input::new("input").w(px(290.)))
             .children(
                 [
@@ -118,6 +119,7 @@ impl Render for Root {
                 }),
             )
             .child(Bubble::new("bubble").child("hello world"))
+            .child(Switch::new("switch"))
     }
 }
 
@@ -138,7 +140,7 @@ fn main() {
             |_window, cx| {
                 let theme_set = ThemeSet::generate(
                     ThemeConfig::default()
-                        //.base_fg(color_from_hex::<Oklaba>("6a41ffff").unwrap())
+                        .base_fg(color_from_hex::<Oklaba>("6a41ffff").unwrap())
                         .base_bg(color_from_hex::<Oklaba>("6a41ffff").unwrap()),
                 );
                 println!("{:#?}", theme_set.dark);
