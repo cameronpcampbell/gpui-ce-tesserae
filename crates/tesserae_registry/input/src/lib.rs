@@ -1,8 +1,8 @@
 use focus_ring::FocusRing;
 use gpui::{
     DurationWithEasing, ElementId, Focusable, FontWeight, InteractiveElement,
-    IntoElement, Lerp, ParentElement, Pixels, Rems, RenderOnce, StyleRefinement,
-    Styled, Window, div, ease_in_out, millis, prelude::FluentBuilder, px, relative,
+    IntoElement, Lerp, ParentElement, Rems, RenderOnce, StyleRefinement, Styled,
+    Window, div, ease_in_out, millis, prelude::FluentBuilder, relative,
     selectors::class,
 };
 use gpui_elements::editable_text::{EditableTextState, text_input};
@@ -134,7 +134,7 @@ fn size_kind<E: Styled>(
     text_size: Rems,
     icon_size: Rems,
     radius: Rems,
-    spacing: Pixels,
+    spacing: Rems,
 ) -> E {
     this.rounded(radius)
         .gap(spacing)
@@ -158,7 +158,7 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
-            px(10.),
+            theme.padding_xl,
         )
     },
 
@@ -171,7 +171,7 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
-            px(10.),
+            theme.padding_xl,
         )
     },
 });

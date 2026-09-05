@@ -1,0 +1,11 @@
+[package]
+name = "switch"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gpui.workspace = true
+tesserae_theme.workspace = true
+tesserae_utils.workspace = true
+palette.workspace = true
+smallvec.workspace = true

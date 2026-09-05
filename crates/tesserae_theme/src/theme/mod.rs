@@ -158,6 +158,15 @@ impl fmt::Debug for Theme {
             .field("radii_2xl", &self.radii_2xl)
             .field("radii_3xl", &self.radii_3xl)
             .field("radii_4xl", &self.radii_4xl)
+            .field("padding_5xl", &self.padding_5xl)
+            .field("padding_4xl", &self.padding_4xl)
+            .field("padding_3xl", &self.padding_3xl)
+            .field("padding_2xl", &self.padding_2xl)
+            .field("padding_xl", &self.padding_xl)
+            .field("padding_lg", &self.padding_lg)
+            .field("padding_md", &self.padding_md)
+            .field("padding_sm", &self.padding_sm)
+            .field("padding_xs", &self.padding_xs)
             .finish()
     }
 }

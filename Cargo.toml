@@ -8,7 +8,7 @@ members = [
   "crates/tesserae_registry/button",
   "crates/tesserae_registry/input",
   "crates/playground",
-  "crates/tesserae_registry/focus_ring", "crates/tesserae_registry/bubble",
+  "crates/tesserae_registry/focus_ring", "crates/tesserae_registry/bubble", "crates/tesserae_registry/switch",
 ]
 
 [workspace.dependencies]

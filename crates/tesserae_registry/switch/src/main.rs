@@ -136,7 +136,7 @@ fn size_kind<E: Styled>(
     text_size: Rems,
     icon_size: Rems,
     radius: Rems,
-    spacing: Rems,
+    spacing: Pixels,
 ) -> E {
     this.rounded(radius)
         .gap(spacing)
@@ -171,7 +171,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.text_size_xs,
             theme.size_xs,
             theme.radii_md,
-            theme.padding_lg,
+            px(8.),
         )
     },
 
@@ -195,7 +195,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.text_size_xs,
             theme.size_sm,
             theme.radii_md,
-            theme.padding_xl,
+            px(10.),
         )
     },
 
@@ -220,7 +220,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
-            theme.padding_xl,
+            px(10.),
         )
     },
 
@@ -244,7 +244,7 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
-            theme.padding_xl,
+            px(10.),
         )
     },
 
