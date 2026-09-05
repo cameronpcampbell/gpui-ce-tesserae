@@ -1,6 +1,6 @@
 use palette::{
-    FromColor, IntoColor, IsWithinBounds, LinSrgb, Oklaba, WithAlpha,
-    convert::FromColorUnclamped,
+    Clamp, FromColor, Hsla, IntoColor, IsWithinBounds, LinSrgba, Mix, Oklaba, Srgba,
+    WithAlpha, color_difference::EuclideanDistance, convert::FromColorUnclamped,
 };
 
 // WCAG 2.1 flare offset, which keeps contrast finite near black.
@@ -64,40 +64,19 @@ pub fn perceptual_contrast(
     perceived_contrast(color.color.l, surround.color.l)
 }
 
-fn fit_feedback_to_srgb(mut color: Oklaba) -> Oklaba {
-    if color.color.l == 0.0 || color.color.l == 1.0 {
-        color.color.a = 0.0;
-        color.color.b = 0.0;
-        return color;
-    }
+fn feedback_candidate(base: Oklaba, endpoint: Oklaba, progress: f32) -> Oklaba {
+    let candidate = base.mix(endpoint, progress);
+    let rgb: LinSrgba = LinSrgba::from_color_unclamped(candidate);
 
-    let in_gamut = |color: Oklaba| {
-        let rgb: LinSrgb = LinSrgb::from_color_unclamped(color.color);
-        rgb.is_within_bounds()
-    };
-    if in_gamut(color) {
-        return color;
-    }
+    // Clipping keeps feedback continuous near saturated blue.
+    rgb.clamp().into_color()
+}
 
-    // Reduce chroma at fixed lightness and hue so GPUI's HSL conversion
-    // does not clamp the color and change the requested lightness step.
-    let original = color;
-    let (mut low, mut high) = (0.0, 1.0);
-    // Twenty bisections resolve the chroma scale to within 1e-6.
-    for _ in 0..20 {
-        let scale = (low + high) * 0.5;
-        color.color.a = original.color.a * scale;
-        color.color.b = original.color.b * scale;
-        if in_gamut(color) {
-            low = scale;
-        } else {
-            high = scale;
-        }
-    }
-
-    color.color.a = original.color.a * low;
-    color.color.b = original.color.b * low;
-    color
+fn displayed_feedback_color(color: Oklaba) -> Oklaba {
+    // GPUI converts solid fills through HSL before displaying them.
+    let hsl: Hsla = color.into_color();
+    let rgb: Srgba = hsl.into_color();
+    rgb.into_color()
 }
 
 /// Perceptual controls that adjust colors in OKLab and return the input type.
@@ -119,15 +98,16 @@ pub trait PerceptualColor: Sized {
     /// Applies a perceptual brightness to the color using its lightness and chroma.
     fn perceptual_brightness(self, intensity: f32) -> Self;
 
-    /// Adds a signed OKLab lightness step, clamped at black and white.
+    /// Applies feedback measured as distance in OKLab.
     ///
-    /// Positive amounts brighten; negative amounts darken. Zero returns the
-    /// original color exactly. The amount must be finite and is clamped to
-    /// `[-1.0, 1.0]`.
+    /// Positive amounts move toward white, negative amounts toward black.
+    /// The distance includes changes in lightness and chroma. `amount` must be
+    /// finite and is clamped to `[-1.0, 1.0]`. Movement stops at black or white.
+    /// Zero returns `self` unchanged.
     ///
-    /// Preserves alpha and hue, reducing chroma only as needed to fit sRGB.
-    /// Black and white have zero chroma. Equal steps target equal lightness
-    /// changes for opaque colors; alpha is not compensated for compositing.
+    /// Starts from the color GPUI displays. Preserves alpha and reduces chroma.
+    /// Clipping to sRGB may shift hue slightly. Equal amounts target equal color
+    /// differences for opaque fills. Translucent results depend on the background.
     fn perceptual_feedback(self, amount: f32) -> Self;
 }
 
@@ -184,17 +164,60 @@ where
             return self;
         }
 
-        let mut perceptual_color: Oklaba = self.into_color();
+        let original: Oklaba = self.into_color();
+        let base = displayed_feedback_color(original);
+        let endpoint =
+            Oklaba::new(if amount > 0.0 { 1.0 } else { 0.0 }, 0.0, 0.0, base.alpha);
+        let target = amount.abs().min(1.0);
+        let available = base.color.distance(endpoint.color);
+        if target >= available {
+            return endpoint.into_color();
+        }
 
-        perceptual_color.color.l =
-            (perceptual_color.color.l + amount.clamp(-1.0, 1.0)).clamp(0.0, 1.0);
-        fit_feedback_to_srgb(perceptual_color).into_color()
+        let mut progress = target / available;
+        let candidate = base.mix(endpoint, progress);
+        let rgb: LinSrgba = LinSrgba::from_color_unclamped(candidate);
+        let tolerance = (target * 1e-5).max(1e-7);
+        let displayed = displayed_feedback_color(candidate);
+        if rgb.is_within_bounds()
+            && (base.color.distance(displayed.color) - target).abs() <= tolerance
+        {
+            return candidate.into_color();
+        }
+
+        // HSL conversion can change the distance even without clipping,
+        // especially near black.
+        let (mut lower, mut upper) = (0.0, 1.0);
+        let mut best = base;
+        let mut best_error = target;
+        for _ in 0..24 {
+            let candidate = feedback_candidate(base, endpoint, progress);
+            let distance = base
+                .color
+                .distance(displayed_feedback_color(candidate).color);
+            let error = (distance - target).abs();
+            if error < best_error {
+                best = candidate;
+                best_error = error;
+            }
+            if error <= tolerance {
+                break;
+            }
+            if distance < target {
+                lower = progress;
+            } else {
+                upper = progress;
+            }
+            progress = (lower + upper) * 0.5;
+        }
+        best.into_color()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use palette::{Hsla, Oklaba, Srgba};
+    use gpui::Background;
+    use palette::{LinSrgb, Oklaba, Srgba, color_difference::EuclideanDistance};
 
     use super::*;
 
@@ -305,133 +328,127 @@ mod tests {
         let _: Oklaba = BLACK.best_contrast([]);
     }
 
-    #[test]
-    fn feedback_is_monotonic_with_uniform_displayed_steps_and_neutral_limits() {
-        let colors = [
-            BLACK,
-            gray(0.02),
-            gray(0.5),
-            gray(0.98),
-            WHITE,
-            Srgba::new(106.0 / 255.0, 65.0 / 255.0, 1.0, 1.0).into_color(),
-            Srgba::new(1.0, 0.0, 0.0, 1.0).into_color(),
-            Srgba::new(0.0, 1.0, 1.0, 1.0).into_color(),
-            Srgba::new(0.0, 0.0, 1.0, 1.0).into_color(),
-        ];
+    fn feedback_samples() -> impl Iterator<Item = Srgba> {
+        let channels = [0.0, 0.25, 0.5, 0.75, 1.0];
+        channels
+            .into_iter()
+            .flat_map(move |red| {
+                channels.into_iter().flat_map(move |green| {
+                    channels
+                        .into_iter()
+                        .map(move |blue| Srgba::new(red, green, blue, 1.0))
+                })
+            })
+            .chain([Srgba::new(106.0 / 255.0, 65.0 / 255.0, 1.0, 1.0)])
+    }
 
+    fn displayed_color(color: Oklaba) -> Oklaba {
+        let rgb: Srgba = Background::from(color).as_solid().unwrap().into_color();
+        rgb.into_color()
+    }
+
+    #[test]
+    fn feedback_changes_smoothly_in_both_directions_until_the_endpoint() {
+        let colors = feedback_samples().map(|color| color.into_color()).chain([
+            gray(0.0001),
+            gray(0.9999),
+            // These colors exceed sRGB.
+            Oklaba::new(0.55, 0.4, -0.4, 0.4),
+            Oklaba::new(0.72, -0.3, 0.3, 0.6),
+        ]);
         for color in colors {
             assert_eq!(color.perceptual_feedback(0.0), color);
-            let mut previous_lightness = -1.0;
+            let rest = displayed_color(color);
+            for direction in [-1.0, 1.0] {
+                let endpoint = if direction > 0.0 { WHITE } else { BLACK };
+                let available = rest.color.distance(displayed_color(endpoint).color);
+                let mut previous = rest;
+                let mut previous_amount = 0.0;
+                let mut previous_strength = 0.0;
+                let amounts = [1e-7, 1e-6, 1e-5, 1e-4]
+                    .into_iter()
+                    .chain((1..=100).map(|step| step as f32 / 100.0))
+                    .chain([2.0]);
 
-            for amount in [
-                -2.0_f32, -1.0, -0.25, -0.08, -0.04, -1e-5, 0.0, 1e-5, 0.04, 0.08,
-                0.25, 1.0, 2.0,
-            ] {
-                let adjusted = color.perceptual_feedback(amount);
-                let hsl: Hsla = adjusted.into_color();
-                let displayed: Oklaba = hsl.into_color();
-                let lightness = displayed.color.l;
-                let step = lightness - color.color.l;
-
-                assert!(lightness.is_finite());
-                assert!(lightness >= previous_lightness - 1e-6);
-                assert!(step.abs() <= amount.abs() + 1e-5);
-                if amount > 0.0 {
-                    assert!(step >= -1e-6);
-                } else if amount < 0.0 {
-                    assert!(step <= 1e-6);
+                for amount in amounts {
+                    let adjusted = color.perceptual_feedback(direction * amount);
+                    let displayed = displayed_color(adjusted);
+                    let strength = rest.color.distance(displayed.color);
+                    let tolerance = if amount <= 1e-4 { 2e-6 } else { 1e-4 };
+                    assert!(
+                        (strength - amount.min(available)).abs() < tolerance,
+                        "base {color:?}, amount {}: distance {strength}",
+                        direction * amount,
+                    );
+                    assert!(
+                        (displayed.color.l - previous.color.l) * direction >= -1e-6
+                    );
+                    assert!(strength >= previous_strength - 1e-6);
+                    assert!(
+                        previous.color.distance(displayed.color)
+                            <= (amount - previous_amount) * 1.5 + 2e-6,
+                        "base {color:?}, amount {}: discontinuous feedback",
+                        direction * amount,
+                    );
+                    if amount >= 1.0 {
+                        assert_eq!(adjusted.color, endpoint.color);
+                        assert_eq!(adjusted.alpha, color.alpha);
+                    }
+                    previous = displayed;
+                    previous_amount = amount;
+                    previous_strength = strength;
                 }
-
-                if adjusted.color.l == 0.0 || adjusted.color.l == 1.0 {
-                    assert_eq!(adjusted.color.a, 0.0);
-                    assert_eq!(adjusted.color.b, 0.0);
-                } else {
-                    assert_close_within(step, amount, 1e-5);
-                }
-                if amount <= -1.0 {
-                    assert_eq!(adjusted, BLACK);
-                } else if amount >= 1.0 {
-                    assert_eq!(adjusted, WHITE);
-                }
-                previous_lightness = lightness;
             }
         }
     }
 
     #[test]
-    fn feedback_preserves_color_and_alpha_across_srgb_and_oklab_inputs() {
-        // Sample the sRGB cube, including its saturated edges and neutrals.
-        for red in [0.0, 0.25, 0.5, 0.75, 1.0] {
-            for green in [0.0, 0.25, 0.5, 0.75, 1.0] {
-                for blue in [0.0, 0.25, 0.5, 0.75, 1.0] {
-                    for alpha in [0.0, 0.4, 1.0] {
-                        let srgb = Srgba::new(red, green, blue, alpha);
-                        let original: Oklaba = srgb.into_color();
-                        assert_eq!(srgb.perceptual_feedback(0.0), srgb);
+    fn feedback_preserves_color_identity_alpha_and_representation() {
+        for sample in feedback_samples() {
+            for alpha in [0.0, 0.4, 1.0] {
+                let srgb = sample.with_alpha(alpha);
+                let original: Oklaba = srgb.into_color();
+                assert_eq!(srgb.perceptual_feedback(0.0), srgb);
 
-                        for amount in [-0.08, -0.04, 0.04, 0.08] {
-                            let adjusted = original.perceptual_feedback(amount);
-                            let rgb: Srgba = srgb.perceptual_feedback(amount);
-                            let roundtrip: Oklaba = rgb.into_color();
-                            let raw: LinSrgb =
-                                LinSrgb::from_color_unclamped(adjusted.color);
+                for amount in [-1.0_f32, -0.08, -0.04, 0.04, 0.08, 1.0] {
+                    let adjusted = original.perceptual_feedback(amount);
+                    let rgb: Srgba = srgb.perceptual_feedback(amount);
+                    let displayed = displayed_color(adjusted);
+                    let roundtrip = displayed_color(rgb.into_color());
+                    let raw: LinSrgb = LinSrgb::from_color_unclamped(adjusted.color);
 
-                            for channel in [raw.red, raw.green, raw.blue] {
-                                assert!(channel.is_finite());
-                                assert!((-1e-6..=1.0 + 1e-6).contains(&channel));
-                            }
-                            assert_eq!(adjusted.alpha, alpha);
-                            assert_eq!(rgb.alpha, alpha);
-                            assert_close_within(
-                                roundtrip.color.l,
-                                adjusted.color.l,
-                                1e-5,
-                            );
-                            assert_close_within(
-                                roundtrip.color.a,
-                                adjusted.color.a,
-                                1e-5,
-                            );
-                            assert_close_within(
-                                roundtrip.color.b,
-                                adjusted.color.b,
-                                1e-5,
-                            );
+                    for channel in [raw.red, raw.green, raw.blue] {
+                        assert!(channel.is_finite());
+                        // Allow conversion rounding at the sRGB limits.
+                        assert!(
+                            (-1e-5..=1.0 + 1e-5).contains(&channel),
+                            "base {srgb:?}, amount {amount}, raw output {raw:?}",
+                        );
+                    }
+                    assert_eq!(adjusted.alpha, alpha);
+                    assert_eq!(rgb.alpha, alpha);
+                    assert!(rgb.is_within_bounds());
+                    assert!(displayed.color.distance(roundtrip.color) < 1e-5);
 
-                            let chroma = original.color.a.hypot(original.color.b);
-                            let adjusted_chroma =
-                                adjusted.color.a.hypot(adjusted.color.b);
-                            assert!(adjusted_chroma <= chroma + 1e-6);
-                            if chroma > 1e-4
-                                && adjusted.color.l > 1e-4
-                                && adjusted.color.l < 1.0 - 1e-4
-                            {
-                                assert!(adjusted_chroma > 1e-4);
-                                assert_close_within(
-                                    adjusted.color.a / adjusted_chroma,
-                                    original.color.a / chroma,
-                                    1e-5,
-                                );
-                                assert_close_within(
-                                    adjusted.color.b / adjusted_chroma,
-                                    original.color.b / chroma,
-                                    1e-5,
-                                );
-                            }
-
-                            let mut unchanged_chroma = original;
-                            unchanged_chroma.color.l = adjusted.color.l;
-                            let rgb: LinSrgb = LinSrgb::from_color_unclamped(
-                                unchanged_chroma.color,
-                            );
-                            if rgb.is_within_bounds()
-                                && adjusted.color.l > 0.0
-                                && adjusted.color.l < 1.0
-                            {
-                                assert_eq!(adjusted.color.a, original.color.a);
-                                assert_eq!(adjusted.color.b, original.color.b);
-                            }
-                        }
+                    let chroma = original.color.a.hypot(original.color.b);
+                    let adjusted_chroma = displayed.color.a.hypot(displayed.color.b);
+                    assert!(adjusted_chroma <= chroma + 1e-5);
+                    if chroma < 1e-5 {
+                        assert!(adjusted_chroma < 1e-5);
+                    } else if amount.abs() <= 0.08
+                        && chroma > 0.05
+                        && adjusted_chroma > 0.05
+                    {
+                        let hue_change =
+                            (displayed.color.b.atan2(displayed.color.a)
+                                - original.color.b.atan2(original.color.a))
+                            .to_degrees();
+                        let hue_change =
+                            (hue_change + 180.0).rem_euclid(360.0) - 180.0;
+                        assert!(
+                            hue_change.abs() < 2.0,
+                            "base {srgb:?}, hue change {hue_change}"
+                        );
                     }
                 }
             }

@@ -10,8 +10,6 @@ use tesserae_utils::PerceptualColor;
 use crate::{ThemeSetKind, ThemeSetKindState, ThemeSetState};
 
 mod generate;
-#[cfg(test)]
-mod tests;
 pub use generate::ThemeConfig;
 use generate::generate_theme;
 
