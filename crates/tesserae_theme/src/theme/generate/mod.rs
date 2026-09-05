@@ -1,5 +1,5 @@
 use build_setters_macro::BuildSetters;
-use gpui::{DefiniteLength, Rems, relative, rems};
+use gpui::{DefiniteLength, Relative, Rems, relative, rems};
 use palette::{IntoColor, Mix, Oklab, Oklaba};
 
 use crate::{Theme, ThemeSetKind, color_from_hex};
@@ -63,15 +63,6 @@ pub struct ThemeConfig {
     pub text_size_8xl: Rems,
     pub text_size_9xl: Rems,
 
-    pub radii_xs: Rems,
-    pub radii_sm: Rems,
-    pub radii_md: Rems,
-    pub radii_lg: Rems,
-    pub radii_xl: Rems,
-    pub radii_2xl: Rems,
-    pub radii_3xl: Rems,
-    pub radii_4xl: Rems,
-
     pub size_5xl: Rems,
     pub size_4xl: Rems,
     pub size_3xl: Rems,
@@ -81,6 +72,17 @@ pub struct ThemeConfig {
     pub size_md: Rems,
     pub size_sm: Rems,
     pub size_xs: Rems,
+
+    pub knob_ratio: Relative,
+
+    pub radii_xs: Rems,
+    pub radii_sm: Rems,
+    pub radii_md: Rems,
+    pub radii_lg: Rems,
+    pub radii_xl: Rems,
+    pub radii_2xl: Rems,
+    pub radii_3xl: Rems,
+    pub radii_4xl: Rems,
 
     pub padding_5xl: Rems,
     pub padding_4xl: Rems,
@@ -117,15 +119,6 @@ impl Default for ThemeConfig {
             text_size_8xl: rems(6.0),
             text_size_9xl: rems(8.0),
 
-            radii_xs: rems(0.125),
-            radii_sm: rems(0.375),
-            radii_md: rems(0.5),
-            radii_lg: rems(0.625),
-            radii_xl: rems(0.875),
-            radii_2xl: rems(1.125),
-            radii_3xl: rems(1.375),
-            radii_4xl: rems(1.625),
-
             size_5xl: rems(2.25),
             size_4xl: rems(2.),
             size_3xl: rems(1.75),
@@ -135,6 +128,17 @@ impl Default for ThemeConfig {
             size_md: rems(0.875),
             size_sm: rems(0.75),
             size_xs: rems(0.625),
+
+            knob_ratio: relative(1.0),
+
+            radii_xs: rems(0.125),
+            radii_sm: rems(0.375),
+            radii_md: rems(0.5),
+            radii_lg: rems(0.625),
+            radii_xl: rems(0.875),
+            radii_2xl: rems(1.125),
+            radii_3xl: rems(1.375),
+            radii_4xl: rems(1.625),
 
             padding_5xl: rems(1.25),
             padding_4xl: rems(1.),
@@ -222,15 +226,6 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         text_size_8xl: config.text_size_8xl,
         text_size_9xl: config.text_size_9xl,
 
-        radii_xs: config.radii_xs,
-        radii_sm: config.radii_sm,
-        radii_md: config.radii_md,
-        radii_lg: config.radii_lg,
-        radii_xl: config.radii_xl,
-        radii_2xl: config.radii_2xl,
-        radii_3xl: config.radii_3xl,
-        radii_4xl: config.radii_4xl,
-
         size_5xl: config.size_5xl,
         size_4xl: config.size_4xl,
         size_3xl: config.size_3xl,
@@ -240,6 +235,17 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         size_md: config.size_md,
         size_sm: config.size_sm,
         size_xs: config.size_xs,
+
+        knob_ratio: config.knob_ratio,
+
+        radii_xs: config.radii_xs,
+        radii_sm: config.radii_sm,
+        radii_md: config.radii_md,
+        radii_lg: config.radii_lg,
+        radii_xl: config.radii_xl,
+        radii_2xl: config.radii_2xl,
+        radii_3xl: config.radii_3xl,
+        radii_4xl: config.radii_4xl,
 
         padding_5xl: config.padding_5xl,
         padding_4xl: config.padding_4xl,

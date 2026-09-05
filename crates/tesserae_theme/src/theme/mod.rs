@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use gpui::{App, DefiniteLength, Rems, Rgba};
+use gpui::{App, DefiniteLength, Relative, Rems, Rgba};
 use palette::{
     Clamp, IntoColor, Oklaba, Srgba, color_difference::Wcag21RelativeContrast,
     convert::FromColorUnclamped,
@@ -67,6 +67,8 @@ pub struct Theme {
     pub size_3xl: Rems,
     pub size_4xl: Rems,
     pub size_5xl: Rems,
+
+    pub knob_ratio: Relative,
 
     pub radii_xs: Rems,
     pub radii_sm: Rems,
