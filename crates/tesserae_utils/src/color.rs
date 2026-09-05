@@ -1,4 +1,7 @@
-use palette::{FromColor, IntoColor, Oklaba, WithAlpha};
+use palette::{
+    FromColor, IntoColor, IsWithinBounds, LinSrgb, Oklaba, WithAlpha,
+    convert::FromColorUnclamped,
+};
 
 // WCAG 2.1 flare offset, which keeps contrast finite near black.
 const FLARE_LUMINANCE: f32 = 0.05;
@@ -33,28 +36,10 @@ fn whittle_contrast(luminance: f32, surround: f32) -> f32 {
     (luminance - surround) / (luminance.min(surround) + FLARE_LUMINANCE)
 }
 
-fn luminance_from_whittle_contrast(contrast: f32, surround: f32) -> f32 {
-    if contrast >= 0.0 {
-        surround + contrast * (surround + FLARE_LUMINANCE)
-    } else {
-        (surround + contrast * FLARE_LUMINANCE) / (1.0 - contrast)
-    }
-}
-
 fn brightness(contrast: f32) -> f32 {
     let gain = if contrast < 0.0 { DECREMENT_GAIN } else { 1.0 };
 
     gain * contrast.signum() * (1.0 + CONTRAST_GAIN * contrast.abs()).ln()
-}
-
-fn contrast_from_brightness(brightness: f32) -> f32 {
-    let gain = if brightness < 0.0 {
-        DECREMENT_GAIN
-    } else {
-        1.0
-    };
-
-    brightness.signum() * ((brightness.abs() / gain).exp() - 1.0) / CONTRAST_GAIN
 }
 
 fn brightness_range() -> f32 {
@@ -79,15 +64,40 @@ pub fn perceptual_contrast(
     perceived_contrast(color.color.l, surround.color.l)
 }
 
-fn nudge_lightness(lightness: f32, surround_lightness: f32, amount: f32) -> f32 {
-    let surround = luminance(surround_lightness);
-    let brightness = brightness(whittle_contrast(luminance(lightness), surround))
-        + amount.clamp(-1.0, 1.0) * brightness_range();
-    let contrast = contrast_from_brightness(brightness);
+fn fit_feedback_to_srgb(mut color: Oklaba) -> Oklaba {
+    if color.color.l == 0.0 || color.color.l == 1.0 {
+        color.color.a = 0.0;
+        color.color.b = 0.0;
+        return color;
+    }
 
-    luminance_from_whittle_contrast(contrast, surround)
-        .clamp(0.0, 1.0)
-        .cbrt()
+    let in_gamut = |color: Oklaba| {
+        let rgb: LinSrgb = LinSrgb::from_color_unclamped(color.color);
+        rgb.is_within_bounds()
+    };
+    if in_gamut(color) {
+        return color;
+    }
+
+    // Reduce chroma at fixed lightness and hue so GPUI's HSL conversion
+    // does not clamp the color and change the requested lightness step.
+    let original = color;
+    let (mut low, mut high) = (0.0, 1.0);
+    // Twenty bisections resolve the chroma scale to within 1e-6.
+    for _ in 0..20 {
+        let scale = (low + high) * 0.5;
+        color.color.a = original.color.a * scale;
+        color.color.b = original.color.b * scale;
+        if in_gamut(color) {
+            low = scale;
+        } else {
+            high = scale;
+        }
+    }
+
+    color.color.a = original.color.a * low;
+    color.color.b = original.color.b * low;
+    color
 }
 
 /// Perceptual controls that adjust colors in OKLab and return the input type.
@@ -109,12 +119,16 @@ pub trait PerceptualColor: Sized {
     /// Applies a perceptual brightness to the color using its lightness and chroma.
     fn perceptual_brightness(self, intensity: f32) -> Self;
 
-    /// Applies perceptual feedback to the color using its surround.
-    fn perceptual_feedback(
-        self,
-        amount: f32,
-        surround: impl IntoColor<Oklaba>,
-    ) -> Self;
+    /// Adds a signed OKLab lightness step, clamped at black and white.
+    ///
+    /// Positive amounts brighten; negative amounts darken. Zero returns the
+    /// original color exactly. The amount must be finite and is clamped to
+    /// `[-1.0, 1.0]`.
+    ///
+    /// Preserves alpha and hue, reducing chroma only as needed to fit sRGB.
+    /// Black and white have zero chroma. Equal steps target equal lightness
+    /// changes for opaque colors; alpha is not compensated for compositing.
+    fn perceptual_feedback(self, amount: f32) -> Self;
 }
 
 impl<C> PerceptualColor for C
@@ -165,23 +179,22 @@ where
         perceptual_color.into_color()
     }
 
-    fn perceptual_feedback(
-        self,
-        amount: f32,
-        surround: impl IntoColor<Oklaba>,
-    ) -> Self {
+    fn perceptual_feedback(self, amount: f32) -> Self {
+        if amount == 0.0 {
+            return self;
+        }
+
         let mut perceptual_color: Oklaba = self.into_color();
-        let surround: Oklaba = surround.into_color();
 
         perceptual_color.color.l =
-            nudge_lightness(perceptual_color.color.l, surround.color.l, amount);
-        perceptual_color.into_color()
+            (perceptual_color.color.l + amount.clamp(-1.0, 1.0)).clamp(0.0, 1.0);
+        fit_feedback_to_srgb(perceptual_color).into_color()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use palette::{Oklaba, Srgba};
+    use palette::{Hsla, Oklaba, Srgba};
 
     use super::*;
 
@@ -293,84 +306,157 @@ mod tests {
     }
 
     #[test]
-    fn feedback_adds_the_requested_contrast_until_lightness_reaches_a_bound() {
+    fn feedback_is_monotonic_with_uniform_displayed_steps_and_neutral_limits() {
         let colors = [
+            BLACK,
             gray(0.02),
             gray(0.5),
             gray(0.98),
-            Oklaba::new(0.5, 0.15, 0.1, 0.4),
-            Oklaba::new(0.7, -0.1, 0.12, 0.4),
+            WHITE,
+            Srgba::new(106.0 / 255.0, 65.0 / 255.0, 1.0, 1.0).into_color(),
+            Srgba::new(1.0, 0.0, 0.0, 1.0).into_color(),
+            Srgba::new(0.0, 1.0, 1.0, 1.0).into_color(),
+            Srgba::new(0.0, 0.0, 1.0, 1.0).into_color(),
         ];
-        let surrounds = [gray(0.0), gray(0.12), gray(0.5), gray(0.95), WHITE];
 
         for color in colors {
-            for surround in surrounds {
-                let original = perceptual_contrast(color, surround);
+            assert_eq!(color.perceptual_feedback(0.0), color);
+            let mut previous_lightness = -1.0;
 
-                for amount in [-0.12_f32, -0.03, 0.03, 0.12] {
-                    let adjusted = color.perceptual_feedback(amount, surround);
-                    let step = perceptual_contrast(adjusted, surround) - original;
-                    let reached_bound =
-                        adjusted.color.l == 0.0 || adjusted.color.l == 1.0;
+            for amount in [
+                -2.0_f32, -1.0, -0.25, -0.08, -0.04, -1e-5, 0.0, 1e-5, 0.04, 0.08,
+                0.25, 1.0, 2.0,
+            ] {
+                let adjusted = color.perceptual_feedback(amount);
+                let hsl: Hsla = adjusted.into_color();
+                let displayed: Oklaba = hsl.into_color();
+                let lightness = displayed.color.l;
+                let step = lightness - color.color.l;
 
-                    if reached_bound {
-                        assert!(step.abs() <= amount.abs() + 1e-5);
-                        assert_eq!(step.signum(), amount.signum());
-                    } else {
-                        assert_close_within(step, amount, 1e-5);
+                assert!(lightness.is_finite());
+                assert!(lightness >= previous_lightness - 1e-6);
+                assert!(step.abs() <= amount.abs() + 1e-5);
+                if amount > 0.0 {
+                    assert!(step >= -1e-6);
+                } else if amount < 0.0 {
+                    assert!(step <= 1e-6);
+                }
+
+                if adjusted.color.l == 0.0 || adjusted.color.l == 1.0 {
+                    assert_eq!(adjusted.color.a, 0.0);
+                    assert_eq!(adjusted.color.b, 0.0);
+                } else {
+                    assert_close_within(step, amount, 1e-5);
+                }
+                if amount <= -1.0 {
+                    assert_eq!(adjusted, BLACK);
+                } else if amount >= 1.0 {
+                    assert_eq!(adjusted, WHITE);
+                }
+                previous_lightness = lightness;
+            }
+        }
+    }
+
+    #[test]
+    fn feedback_preserves_color_and_alpha_across_srgb_and_oklab_inputs() {
+        // Sample the sRGB cube, including its saturated edges and neutrals.
+        for red in [0.0, 0.25, 0.5, 0.75, 1.0] {
+            for green in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                for blue in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                    for alpha in [0.0, 0.4, 1.0] {
+                        let srgb = Srgba::new(red, green, blue, alpha);
+                        let original: Oklaba = srgb.into_color();
+                        assert_eq!(srgb.perceptual_feedback(0.0), srgb);
+
+                        for amount in [-0.08, -0.04, 0.04, 0.08] {
+                            let adjusted = original.perceptual_feedback(amount);
+                            let rgb: Srgba = srgb.perceptual_feedback(amount);
+                            let roundtrip: Oklaba = rgb.into_color();
+                            let raw: LinSrgb =
+                                LinSrgb::from_color_unclamped(adjusted.color);
+
+                            for channel in [raw.red, raw.green, raw.blue] {
+                                assert!(channel.is_finite());
+                                assert!((-1e-6..=1.0 + 1e-6).contains(&channel));
+                            }
+                            assert_eq!(adjusted.alpha, alpha);
+                            assert_eq!(rgb.alpha, alpha);
+                            assert_close_within(
+                                roundtrip.color.l,
+                                adjusted.color.l,
+                                1e-5,
+                            );
+                            assert_close_within(
+                                roundtrip.color.a,
+                                adjusted.color.a,
+                                1e-5,
+                            );
+                            assert_close_within(
+                                roundtrip.color.b,
+                                adjusted.color.b,
+                                1e-5,
+                            );
+
+                            let chroma = original.color.a.hypot(original.color.b);
+                            let adjusted_chroma =
+                                adjusted.color.a.hypot(adjusted.color.b);
+                            assert!(adjusted_chroma <= chroma + 1e-6);
+                            if chroma > 1e-4
+                                && adjusted.color.l > 1e-4
+                                && adjusted.color.l < 1.0 - 1e-4
+                            {
+                                assert!(adjusted_chroma > 1e-4);
+                                assert_close_within(
+                                    adjusted.color.a / adjusted_chroma,
+                                    original.color.a / chroma,
+                                    1e-5,
+                                );
+                                assert_close_within(
+                                    adjusted.color.b / adjusted_chroma,
+                                    original.color.b / chroma,
+                                    1e-5,
+                                );
+                            }
+
+                            let mut unchanged_chroma = original;
+                            unchanged_chroma.color.l = adjusted.color.l;
+                            let rgb: LinSrgb = LinSrgb::from_color_unclamped(
+                                unchanged_chroma.color,
+                            );
+                            if rgb.is_within_bounds()
+                                && adjusted.color.l > 0.0
+                                && adjusted.color.l < 1.0
+                            {
+                                assert_eq!(adjusted.color.a, original.color.a);
+                                assert_eq!(adjusted.color.b, original.color.b);
+                            }
+                        }
                     }
                 }
             }
         }
-
-        for surround in [gray(0.0), gray(0.5), gray(1.0)] {
-            for (amount, expected) in
-                [(-2.0, 0.0), (-1.0, 0.0), (0.0, 0.6), (1.0, 1.0), (2.0, 1.0)]
-            {
-                assert_close(
-                    gray(0.6).perceptual_feedback(amount, surround).color.l,
-                    expected,
-                );
-            }
-        }
     }
 
     #[test]
-    fn feedback_needs_a_larger_lightness_change_farther_from_the_surround() {
-        let surround = gray(0.3);
-        let near = gray(0.3).perceptual_feedback(0.04, surround).color.l - 0.3;
-        let far = gray(0.75).perceptual_feedback(0.04, surround).color.l - 0.75;
-
-        assert!(near > 0.0);
-        assert!(far > near * 1.5, "far {far} should exceed near {near}");
-    }
-
-    #[test]
-    fn adjustments_change_only_their_documented_components() {
+    fn absolute_controls_change_only_their_documented_components() {
         let oklab: Oklaba = Srgba::new(0.4, 0.3, 0.5, 0.2).into_color();
         let adjusted_alpha = oklab.perceptual_alpha(0.5);
 
         assert_eq!(adjusted_alpha.color, oklab.color);
-        for adjusted in [
-            oklab.perceptual_brightness(0.5),
-            oklab.perceptual_feedback(-0.03, BLACK),
-        ] {
-            assert_close(adjusted.color.a, oklab.color.a);
-            assert_close(adjusted.color.b, oklab.color.b);
-            assert_close(adjusted.alpha, oklab.alpha);
-        }
+        let adjusted = oklab.perceptual_brightness(0.5);
+        assert_close(adjusted.color.a, oklab.color.a);
+        assert_close(adjusted.color.b, oklab.color.b);
+        assert_close(adjusted.alpha, oklab.alpha);
 
         let srgb = Srgba::new(0.2, 0.2, 0.2, 0.4);
         let adjusted_alpha: Srgba = srgb.perceptual_alpha(0.5);
         let adjusted_brightness: Srgba = srgb.perceptual_brightness(0.5);
-        let adjusted_feedback: Srgba = srgb.perceptual_feedback(0.1, BLACK);
 
         assert_eq!(adjusted_alpha.color, srgb.color);
-        for adjusted in [adjusted_brightness, adjusted_feedback] {
-            assert_close(adjusted.alpha, srgb.alpha);
-            assert!(adjusted.red > srgb.red);
-            assert_close(adjusted.red, adjusted.green);
-            assert_close(adjusted.green, adjusted.blue);
-        }
+        assert_close(adjusted_brightness.alpha, srgb.alpha);
+        assert!(adjusted_brightness.red > srgb.red);
+        assert_close(adjusted_brightness.red, adjusted_brightness.green);
+        assert_close(adjusted_brightness.green, adjusted_brightness.blue);
     }
 }

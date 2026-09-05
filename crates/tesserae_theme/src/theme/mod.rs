@@ -10,6 +10,8 @@ use tesserae_utils::PerceptualColor;
 use crate::{ThemeSetKind, ThemeSetKindState, ThemeSetState};
 
 mod generate;
+#[cfg(test)]
+mod tests;
 pub use generate::ThemeConfig;
 use generate::generate_theme;
 
@@ -174,8 +176,8 @@ impl fmt::Debug for Theme {
 }
 
 impl Theme {
-    const HOVER_FEEDBACK: f32 = 0.07;
-    const ACTIVE_FEEDBACK: f32 = 0.14;
+    const HOVER_FEEDBACK: f32 = 0.04;
+    const ACTIVE_FEEDBACK: f32 = 0.08;
 
     pub fn read_global(cx: &App) -> &Theme {
         let theme_set_kind = *cx.global::<ThemeSetKindState>().0.read(cx);
@@ -249,14 +251,14 @@ impl Theme {
         let color = color.into_color();
         let amount = self.feedback_direction(color) * Self::HOVER_FEEDBACK;
 
-        color.perceptual_feedback(amount, self.bg_primary)
+        color.perceptual_feedback(amount)
     }
 
     pub fn active_feedback(&self, color: impl IntoColor<Oklaba>) -> Oklaba {
         let color = color.into_color();
         let amount = self.feedback_direction(color) * Self::ACTIVE_FEEDBACK;
 
-        color.perceptual_feedback(amount, self.bg_primary)
+        color.perceptual_feedback(amount)
     }
 
     fn feedback_direction(&self, color: Oklaba) -> f32 {
