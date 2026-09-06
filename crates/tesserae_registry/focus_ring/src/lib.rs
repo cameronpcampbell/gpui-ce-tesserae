@@ -34,7 +34,7 @@ impl RenderOnce for FocusRing {
         cx: &mut gpui::App,
     ) -> impl gpui::IntoElement {
         let theme = Theme::read_global(cx);
-        let focus_ring_color = theme.accent_primary.perceptual_alpha(0.125);
+        let focus_ring_color = theme.accent_primary.perceptual_alpha(0.2);
 
         div()
             .id(self.id)

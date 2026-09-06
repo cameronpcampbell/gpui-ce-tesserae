@@ -19,16 +19,6 @@ fn perceptual_magnitude(color: &Oklaba) -> f32 {
     lightness.hypot(chroma).clamp(0.0, 1.0)
 }
 
-fn remap_perceptual_value(value: f32, magnitude: f32) -> f32 {
-    let value = value.clamp(0.0, 1.0);
-
-    if value == 0.0 || value == 1.0 {
-        value
-    } else {
-        value.powf(magnitude)
-    }
-}
-
 fn luminance(lightness: f32) -> f32 {
     lightness.clamp(0.0, 1.0).powi(3)
 }
@@ -157,7 +147,17 @@ pub trait PerceptualColor: Sized {
     where
         C: Clone + IntoColor<Oklaba>;
 
-    /// Applies a perceptual alpha to the color using its lightness and chroma.
+    /// Sets alpha with bounded compensation based on displayed OKLab lightness
+    /// and chroma. Colors with a lower combined magnitude receive more alpha.
+    ///
+    /// `desired_alpha` must be finite and is clamped to `[0.0, 1.0]`. Zero is
+    /// transparent; one is opaque. The result is at least the clamped input
+    /// and at most twice that input, capped at one. The response is continuous
+    /// and monotonic, including for black.
+    ///
+    /// Measures the color GPUI displays, preserves the original color channels,
+    /// and replaces the existing alpha. This is a heuristic; the perceived
+    /// opacity still depends on the background.
     fn perceptual_alpha(self, desired_alpha: f32) -> Self;
 
     /// Sets displayed OKLab lightness, clamped to `[0.0, 1.0]`.
@@ -214,11 +214,16 @@ where
     }
 
     fn perceptual_alpha(self, desired_alpha: f32) -> Self {
-        let perceptual_color = self.clone().into_color();
-        let magnitude = perceptual_magnitude(&perceptual_color);
-        let alpha = remap_perceptual_value(desired_alpha, magnitude);
+        let alpha = desired_alpha.clamp(0.0, 1.0);
+        if alpha == 0.0 || alpha == 1.0 {
+            return self.with_alpha(alpha);
+        }
 
-        self.with_alpha(alpha)
+        let displayed = gpui_displayed_color(self.clone().into_color());
+        let magnitude = perceptual_magnitude(&displayed);
+        let correction = (1.0 - magnitude) * alpha * (1.0 - alpha);
+
+        self.with_alpha(alpha + correction)
     }
 
     fn perceptual_brightness(self, intensity: f32) -> Self {
@@ -280,29 +285,117 @@ mod tests {
     }
 
     #[test]
-    fn alpha_is_bounded_monotonic_and_compensates_faint_colors() {
-        let colors = [gray(0.2), Oklaba::new(0.4, 0.2, -0.1, 0.6), gray(0.8)];
+    fn alpha_replaces_opacity_and_preserves_color_channels() {
+        fn check<C>(original: C)
+        where
+            C: Copy
+                + std::fmt::Debug
+                + PartialEq
+                + PerceptualColor
+                + WithAlpha<f32, WithAlpha = C>,
+            C::Color: std::fmt::Debug + PartialEq,
+        {
+            for desired in [-2.0_f32, 0.0, 0.08, 0.125, 0.5, 1.0, 2.0] {
+                let expected = original.perceptual_alpha(desired);
+                let (color, alpha) = expected.split();
+                assert_eq!(color, original.without_alpha());
+                assert!((desired.clamp(0.0, 1.0)..=1.0).contains(&alpha));
+                if desired <= 0.0 || desired >= 1.0 {
+                    assert_eq!(alpha, desired.clamp(0.0, 1.0));
+                }
+                assert_eq!(expected.perceptual_alpha(desired), expected);
 
-        for color in colors {
-            let adjusted = [-1.0, 0.0, 0.25, 0.5, 0.75, 1.0, 2.0]
-                .map(|value| color.perceptual_alpha(value).alpha);
-
-            assert_eq!(adjusted[0], 0.0);
-            assert_eq!(adjusted[1], 0.0);
-            assert_eq!(adjusted[5], 1.0);
-            assert_eq!(adjusted[6], 1.0);
-            assert!(adjusted.windows(2).all(|pair| pair[0] <= pair[1]));
+                for initial_alpha in [0.0, 0.4, 1.0] {
+                    assert_eq!(
+                        original.with_alpha(initial_alpha).perceptual_alpha(desired),
+                        expected,
+                    );
+                }
+            }
         }
 
-        let dark = gray(0.2);
-        let colorful = Oklaba::new(0.2, 0.3, 0.4, 1.0);
-        let light = gray(0.8);
-        let compensated_alpha =
-            [dark, colorful, light].map(|color| color.perceptual_alpha(0.5).alpha);
-        assert!(compensated_alpha.windows(2).all(|pair| pair[0] > pair[1]));
+        for color in color_samples() {
+            let hsl = Background::from(color).as_solid().unwrap();
+            let srgb: Srgba = hsl.into_color();
+            check(color);
+            check(srgb);
+            check(hsl);
+        }
+    }
 
-        let srgb = Srgba::new(0.2, 0.2, 0.2, 0.4);
-        assert_eq!(srgb.perceptual_alpha(0.5).color, srgb.color);
+    #[test]
+    fn alpha_increases_smoothly_with_bounded_compensation() {
+        for color in color_samples() {
+            let mut previous_alpha = 0.0;
+            let mut previous_desired = 0.0;
+            let requests = [0.0, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+                .into_iter()
+                .chain((1..100).map(|step| step as f32 / 100.0))
+                .chain([0.9999, 0.99999, 0.999999, 1.0]);
+
+            for desired in requests {
+                let alpha = color.perceptual_alpha(desired).alpha;
+                assert!(
+                    (desired..=(2.0 * desired).min(1.0)).contains(&alpha),
+                    "base {color:?}, desired {desired}: alpha {alpha}",
+                );
+                assert!(alpha >= previous_alpha);
+                assert!(
+                    alpha - previous_alpha
+                        <= 2.0 * (desired - previous_desired) + 2.0 * f32::EPSILON,
+                    "base {color:?}, desired {desired}: abrupt alpha change",
+                );
+                previous_alpha = alpha;
+                previous_desired = desired;
+            }
+        }
+    }
+
+    #[test]
+    fn alpha_depends_on_displayed_color_across_representations() {
+        for sample in color_samples() {
+            for initial_alpha in [0.0, 0.4, 1.0] {
+                let original = sample.with_alpha(initial_alpha);
+                let hsl = Background::from(original).as_solid().unwrap();
+                let srgb: Srgba = hsl.into_color();
+
+                for desired in [1e-6, 0.08, 0.125, 0.5, 0.9] {
+                    let adjusted = original.perceptual_alpha(desired);
+                    for displayed in [
+                        displayed_color(srgb.perceptual_alpha(desired)),
+                        displayed_color(hsl.perceptual_alpha(desired)),
+                    ] {
+                        assert_close_within(displayed.alpha, adjusted.alpha, 1e-5);
+                        assert!(
+                            displayed
+                                .color
+                                .distance(displayed_color(adjusted).color)
+                                < 1e-5
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn alpha_compensation_decreases_with_lightness_and_chroma() {
+        for desired in [0.08, 0.125, 0.5, 0.9] {
+            let mut previous_alpha = BLACK.perceptual_alpha(desired).alpha;
+            for step in 1..=100 {
+                let alpha =
+                    gray(step as f32 / 100.0).perceptual_alpha(desired).alpha;
+                assert!(alpha < previous_alpha);
+                assert!(previous_alpha - alpha < 0.01);
+                previous_alpha = alpha;
+            }
+            assert_close(previous_alpha, desired);
+
+            let neutral = gray(0.5).perceptual_alpha(desired);
+            let colorful = Oklaba::new(0.5, 0.1, 0.0, 1.0).perceptual_alpha(desired);
+            assert!(colorful.alpha < neutral.alpha);
+            assert!(colorful.alpha > desired);
+        }
     }
 
     #[test]
