@@ -1,22 +1,98 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, DurationWithEasing, ElementId, InteractiveElement, IntoElement, Lerp,
-    ParentElement, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled,
-    Window, div, ease_in_out, linear_color_stop, linear_gradient, millis,
-    prelude::FluentBuilder, selectors::class,
+    App, ClickEvent, DispatchPhase, DurationWithEasing, ElementId, Entity,
+    InteractiveElement, IntoElement, Lerp, MouseButton, MouseMoveEvent,
+    ParentElement, Pixels, RenderOnce, StatefulInteractiveElement, StyleRefinement,
+    Styled, Window, canvas, div, ease_in_out, linear_color_stop, linear_gradient,
+    millis, prelude::FluentBuilder, px, selectors::class,
 };
 use palette::WithAlpha;
 use tesserae_utils::{PerceptualColor, StyledElement, kinds, use_focus_handle};
 
 use tesserae_theme::Theme;
 
+const DRAG_THRESHOLD: Pixels = px(10.);
+type OnClick = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
+
+#[derive(Clone, Copy, Default)]
+struct DragState {
+    start_x: Option<Pixels>,
+    dragged_to: Option<bool>,
+}
+
+impl DragState {
+    fn start(&mut self, x: Pixels) {
+        self.start_x = Some(x);
+        self.dragged_to = None;
+    }
+
+    fn update(&mut self, x: Pixels) -> bool {
+        let Some(start_x) = self.start_x else {
+            return false;
+        };
+
+        let previous = self.dragged_to;
+        let delta = x - start_x;
+
+        if delta > DRAG_THRESHOLD {
+            self.dragged_to = Some(true);
+        } else if delta < -DRAG_THRESHOLD {
+            self.dragged_to = Some(false);
+        }
+
+        self.dragged_to != previous
+    }
+
+    fn finish(
+        &mut self,
+        x: Pixels,
+        checked: bool,
+        released_inside: bool,
+    ) -> Option<bool> {
+        self.update(x);
+
+        let next = match self.dragged_to {
+            Some(next) if next != checked => Some(next),
+            Some(_) => None,
+            None if released_inside => Some(!checked),
+            None => None,
+        };
+
+        *self = Self::default();
+        next
+    }
+}
+
+fn drag_tracker(drag_state: Entity<DragState>) -> impl IntoElement {
+    canvas(
+        |_, _, _| (),
+        move |_, _, window, _| {
+            window.on_mouse_event(
+                move |event: &MouseMoveEvent, phase, _window, cx| {
+                    if phase != DispatchPhase::Capture || !event.dragging() {
+                        return;
+                    }
+
+                    drag_state.update(cx, |state, cx| {
+                        if state.update(event.position.x) {
+                            cx.notify();
+                        }
+                    });
+                },
+            );
+        },
+    )
+    .absolute()
+    .inset_0()
+}
+
 #[derive(IntoElement)]
 pub struct Switch {
     id: ElementId,
     checked: bool,
     disabled: bool,
-    on_click: Option<Rc<dyn Fn(&bool, &mut Window, &mut App)>>,
+    on_click: Option<OnClick>,
     style: StyleRefinement,
 }
 
@@ -59,6 +135,23 @@ impl RenderOnce for Switch {
         let _focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
 
         let checked = self.checked;
+        let drag_state = window.use_keyed_state(
+            (self.id.clone(), "state:drag"),
+            cx,
+            |_window, _cx| DragState::default(),
+        );
+        let can_change = !self.disabled && self.on_click.is_some();
+        let drag_active = drag_state.read(cx).start_x.is_some();
+
+        if !can_change && drag_active {
+            drag_state.update(cx, |state, _cx| *state = DragState::default());
+        }
+
+        let effective_checked = if can_change {
+            drag_state.read(cx).dragged_to.unwrap_or(checked)
+        } else {
+            checked
+        };
 
         let theme = Theme::read_global(cx);
 
@@ -81,7 +174,7 @@ impl RenderOnce for Switch {
             .bg(theme.bg_secondary)
             .inset_ring_1()
             .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
-            .apply_kind(SwitchStateKind::from_bool(checked), theme)
+            .apply_kind(SwitchStateKind::from_bool(effective_checked), theme)
             .transitions(|transitions| {
                 transitions.bg(millis(200).with_easing(ease_in_out))
             })
@@ -117,7 +210,7 @@ impl RenderOnce for Switch {
                     .h(knob_height)
                     .rounded_full()
                     .rounded_smoothing_1()
-                    .when(checked, |this| this.right(padding))
+                    .when(effective_checked, |this| this.right(padding))
                     .transitions(|transitions| {
                         transitions
                             .bg(millis(200).with_easing(ease_in_out))
@@ -146,9 +239,63 @@ impl RenderOnce for Switch {
                     .when_some(
                         self.on_click,
                         |this, on_click| {
-                            this.on_click(move |_event, window, cx| {
-                                on_click(&!checked, window, cx);
-                            })
+                            let drag_state_on_down = drag_state.clone();
+                            let drag_state_on_up = drag_state.clone();
+                            let on_mouse_up = on_click.clone();
+
+                            this.child(drag_tracker(drag_state))
+                                .on_mouse_down_all(
+                                    move |event, phase, hitbox, window, cx| {
+                                        if phase == DispatchPhase::Bubble
+                                            && event.button == MouseButton::Left
+                                            && hitbox.is_hovered(window)
+                                        {
+                                            drag_state_on_down.update(
+                                                cx,
+                                                |state, _cx| {
+                                                    state.start(event.position.x)
+                                                },
+                                            );
+                                        }
+                                    },
+                                )
+                                .on_mouse_up_all(
+                                    move |event, phase, hitbox, window, cx| {
+                                        if phase != DispatchPhase::Capture
+                                            || event.button != MouseButton::Left
+                                        {
+                                            return;
+                                        }
+
+                                        let next = drag_state_on_up.update(
+                                            cx,
+                                            |state, cx| {
+                                                if state.start_x.is_some() {
+                                                    let next = state.finish(
+                                                        event.position.x,
+                                                        checked,
+                                                        hitbox.bounds.contains(
+                                                            &event.position,
+                                                        ),
+                                                    );
+                                                    cx.notify();
+                                                    next
+                                                } else {
+                                                    None
+                                                }
+                                            },
+                                        );
+
+                                        if let Some(next) = next {
+                                            on_mouse_up(&next, window, cx);
+                                        }
+                                    },
+                                )
+                                .on_click(move |event, window, cx| {
+                                    if !matches!(event, ClickEvent::Mouse(_)) {
+                                        on_click(&!checked, window, cx);
+                                    }
+                                })
                         },
                     )
                 },
