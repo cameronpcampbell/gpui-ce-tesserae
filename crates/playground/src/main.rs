@@ -19,7 +19,7 @@ struct Root;
 impl Render for Root {
     fn render(
         &mut self,
-        _window: &mut gpui::Window,
+        window: &mut gpui::Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let theme = Theme::read_global(cx);
@@ -119,7 +119,19 @@ impl Render for Root {
                 }),
             )
             .child(Bubble::new("bubble").child("hello world"))
-            .child(Switch::new("switch").disabled(true))
+            .child({
+                let switch_state =
+                    window.use_keyed_state("switch_state", cx, |_window, _cx| false);
+
+                Switch::new("switch")
+                    .checked(*switch_state.read(cx))
+                    .on_click(move |checked, _window, cx| {
+                        switch_state.update(cx, |this, cx| {
+                            *this = *checked;
+                            cx.notify();
+                        })
+                    })
+            })
     }
 }
 
