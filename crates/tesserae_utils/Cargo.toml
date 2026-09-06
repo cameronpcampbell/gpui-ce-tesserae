@@ -6,3 +6,10 @@ edition = "2024"
 [dependencies]
 gpui.workspace = true
 palette.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "color"
+harness = false

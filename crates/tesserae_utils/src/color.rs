@@ -78,6 +78,7 @@ fn search_displayed_mix(
     let (mut lower, mut upper) = (0.0, 1.0);
 
     let mut progress = initial_progress.clamp(0.0, 1.0);
+    let (mut previous_progress, mut previous_measured) = (0.0, 0.0);
     let mut best = base;
     let mut best_error = target;
 
@@ -101,7 +102,22 @@ fn search_displayed_mix(
             upper = progress;
         }
 
-        progress = (lower + upper) * 0.5;
+        // Estimate the target from the last two measurements. Flat measurements
+        // or estimates outside the bracket fall back to bisection.
+        let interpolated = progress
+            + (target - measured) * (progress - previous_progress)
+                / (measured - previous_measured);
+        previous_progress = progress;
+        previous_measured = measured;
+        let next = if interpolated > lower && interpolated < upper {
+            interpolated
+        } else {
+            (lower + upper) * 0.5
+        };
+        if next == progress {
+            break;
+        }
+        progress = next;
     }
 
     best
@@ -382,6 +398,20 @@ mod tests {
 
     fn srgb_samples() -> impl Iterator<Item = Srgba> {
         let channels = [0.0, 0.25, 0.5, 0.75, 1.0];
+        // Exercise colors between grid points without a random test dependency.
+        let interior = (0..64).scan(0x5eed_u32, |state, _| {
+            let [red, green, blue] = std::array::from_fn(|_| {
+                *state = state.wrapping_mul(1664525).wrapping_add(1013904223);
+                (*state >> 8) as f32 / (1_u32 << 24) as f32
+            });
+            Some(Srgba::new(red, green, blue, 1.0))
+        });
+        let saturated: [Srgba; 4] = [
+            Srgba::new(1.0, 0.0, 0.0, 1.0),
+            Srgba::new(0.0, 1.0, 0.0, 1.0),
+            Srgba::new(0.0, 0.0, 1.0, 1.0),
+            Srgba::new(106.0 / 255.0, 65.0 / 255.0, 1.0, 1.0),
+        ];
         channels
             .into_iter()
             .flat_map(move |red| {
@@ -391,7 +421,17 @@ mod tests {
                         .map(move |blue| Srgba::new(red, green, blue, 1.0))
                 })
             })
-            .chain([Srgba::new(106.0 / 255.0, 65.0 / 255.0, 1.0, 1.0)])
+            .chain(interior)
+            .chain(saturated.into_iter().flat_map(|color| {
+                [0.0, 1e-6, 1e-4].map(|offset| {
+                    Srgba::new(
+                        color.red.clamp(offset, 1.0 - offset),
+                        color.green.clamp(offset, 1.0 - offset),
+                        color.blue.clamp(offset, 1.0 - offset),
+                        color.alpha,
+                    )
+                })
+            }))
     }
 
     fn displayed_color(color: impl IntoColor<Hsla>) -> Oklaba {
@@ -484,9 +524,13 @@ mod tests {
                 ) < 1e-5
             );
 
-            for delta in [-1e-5_f32, 1e-5] {
+            for delta in [-1e-5_f32, -2e-7, -1e-7, -5e-8, 5e-8, 1e-7, 2e-7, 1e-5] {
                 let target = (rest.color.l + delta).clamp(0.0, 1.0);
                 let adjusted = displayed_color(color.perceptual_brightness(target));
+                assert!(
+                    (adjusted.color.l - target).abs() < 2e-6,
+                    "base {color:?}, target {target}: displayed {adjusted:?}",
+                );
                 assert!(rest.color.distance(adjusted.color) < 0.01);
                 assert!(chroma(adjusted) <= original_chroma + 1e-5);
 
@@ -508,10 +552,20 @@ mod tests {
                 let available = rest.color.distance(displayed_color(endpoint).color);
                 let mut previous = rest;
                 let mut previous_amount = 0.0;
-                let amounts = [1e-7, 1e-6, 1e-5, 1e-4]
+                let mut amounts: Vec<_> = [1e-9, 1e-8, 5e-8, 1e-7, 1e-6, 1e-5, 1e-4]
                     .into_iter()
                     .chain((1..=100).map(|step| step as f32 / 100.0))
-                    .chain([2.0]);
+                    .chain([
+                        (available - 1e-6).max(0.0),
+                        available.next_down().max(0.0),
+                        available,
+                        available.next_up(),
+                        available + 1e-6,
+                        2.0,
+                    ])
+                    .collect();
+                amounts.sort_by(f32::total_cmp);
+                amounts.dedup();
 
                 for amount in amounts {
                     let adjusted = color.perceptual_feedback(direction * amount);
@@ -573,7 +627,7 @@ mod tests {
                 assert_eq!(srgb.perceptual_feedback(0.0), srgb);
                 assert_eq!(hsl.perceptual_feedback(0.0), hsl);
 
-                for intensity in [0.0, 0.5, 1.0] {
+                for intensity in [0.0, 1e-6, 0.2, 0.5, 0.8, 0.999999, 1.0] {
                     assert_equivalent(
                         alpha,
                         original.perceptual_brightness(intensity),
@@ -582,7 +636,8 @@ mod tests {
                     );
                 }
 
-                for amount in [-1.0_f32, -0.04, 0.04, 1.0] {
+                for amount in [-1.0_f32, -0.08, -0.04, -1e-7, 1e-7, 0.04, 0.08, 1.0]
+                {
                     assert_equivalent(
                         alpha,
                         original.perceptual_feedback(amount),
