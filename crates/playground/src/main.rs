@@ -119,7 +119,7 @@ impl Render for Root {
                 }),
             )
             .child(Bubble::new("bubble").child("hello world"))
-            .child(Switch::new("switch"))
+            .child(Switch::new("switch").disabled(true))
     }
 }
 

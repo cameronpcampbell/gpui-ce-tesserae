@@ -1,7 +1,9 @@
+use std::rc::Rc;
+
 use gpui::{
-    DurationWithEasing, ElementId, InteractiveElement, IntoElement, Lerp,
+    App, DurationWithEasing, ElementId, InteractiveElement, IntoElement, Lerp,
     ParentElement, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled,
-    div, ease_in_out, linear_color_stop, linear_gradient, millis,
+    Window, div, ease_in_out, linear_color_stop, linear_gradient, millis,
     prelude::FluentBuilder, selectors::class,
 };
 use palette::WithAlpha;
@@ -12,6 +14,9 @@ use tesserae_theme::Theme;
 #[derive(IntoElement)]
 pub struct Switch {
     id: ElementId,
+    checked: bool,
+    disabled: bool,
+    on_click: Option<Rc<dyn Fn(&bool, &mut Window, &mut App)>>,
     style: StyleRefinement,
 }
 
@@ -19,8 +24,29 @@ impl Switch {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
+            checked: false,
+            disabled: false,
+            on_click: None,
             style: StyleRefinement::default(),
         }
+    }
+
+    pub fn checked(mut self, checked: bool) -> Self {
+        self.checked = checked;
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+
+    pub fn on_click(
+        mut self,
+        on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_click = Some(Rc::new(on_click));
+        self
     }
 }
 
@@ -32,12 +58,7 @@ impl RenderOnce for Switch {
     ) -> impl gpui::IntoElement {
         let _focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
 
-        let enabled_state = window.use_keyed_state(
-            (self.id.clone(), "state:enabled"),
-            cx,
-            |_window, _cx| false,
-        );
-        let enabled = *enabled_state.read(cx);
+        let checked = self.checked;
 
         let theme = Theme::read_global(cx);
 
@@ -60,22 +81,9 @@ impl RenderOnce for Switch {
             .bg(theme.bg_secondary)
             .inset_ring_1()
             .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
-            .apply_kind(SwitchStateKind::from_bool(enabled), theme)
-            .hover(|refinement| {
-                refinement
-                    .bg(theme.hover_feedback(theme.bg_secondary))
-                    .select_descendants(class("overlay"), |refinement| {
-                        refinement
-                            .bg(theme.hover_feedback(theme.accent_primary))
-                            .hidden()
-                    })
-            })
-            .active(|refinement| {
-                refinement
-                    .bg(theme.active_feedback(theme.bg_secondary))
-                    .select_children(class("overlay"), |refinement| {
-                        refinement.bg(theme.active_feedback(theme.accent_primary))
-                    })
+            .apply_kind(SwitchStateKind::from_bool(checked), theme)
+            .transitions(|transitions| {
+                transitions.bg(millis(200).with_easing(ease_in_out))
             })
             .child(
                 div()
@@ -97,7 +105,7 @@ impl RenderOnce for Switch {
                     ))
                     .opacity(0.)
                     .transitions(|transitions| {
-                        transitions.bg(millis(100).with_easing(ease_in_out))
+                        transitions.bg(millis(200).with_easing(ease_in_out))
                     }),
             )
             .child(
@@ -109,19 +117,43 @@ impl RenderOnce for Switch {
                     .h(knob_height)
                     .rounded_full()
                     .rounded_smoothing_1()
-                    .when(enabled, |this| this.right(padding))
+                    .when(checked, |this| this.right(padding))
                     .transitions(|transitions| {
                         transitions
-                            .bg(millis(100).with_easing(ease_in_out))
+                            .bg(millis(200).with_easing(ease_in_out))
                             .right(millis(100).with_easing(ease_in_out))
                     }),
             )
-            .on_click(move |_event, _window, cx| {
-                enabled_state.update(cx, |enabled, cx| {
-                    *enabled = !*enabled;
-                    cx.notify();
-                });
-            })
+            .when_else(
+                !self.disabled,
+                |this| {
+                    this.hover(|refinement| {
+                        refinement
+                            .bg(theme.hover_feedback(theme.bg_secondary))
+                            .select_children(class("overlay"), |refinement| {
+                                refinement
+                                    .bg(theme.hover_feedback(theme.accent_primary))
+                            })
+                    })
+                    .active(|refinement| {
+                        refinement
+                            .bg(theme.active_feedback(theme.bg_secondary))
+                            .select_children(class("overlay"), |refinement| {
+                                refinement
+                                    .bg(theme.active_feedback(theme.accent_primary))
+                            })
+                    })
+                    .when_some(
+                        self.on_click,
+                        |this, on_click| {
+                            this.on_click(move |_event, window, cx| {
+                                on_click(&!checked, window, cx);
+                            })
+                        },
+                    )
+                },
+                |this| this.cursor_not_allowed().opacity(0.48),
+            )
     }
 }
 
@@ -145,7 +177,7 @@ kinds!(pub SwitchStateKind<_, &Theme> {
                     .accent_primary
                     .best_contrast([theme.bg_secondary, theme.fg_primary]))
             })
-            .select_children(class("overlay"), |refinement| refinement.opacity(1.))
+            .select_descendants(class("overlay"), |refinement| refinement.opacity(1.))
     },
 });
 
