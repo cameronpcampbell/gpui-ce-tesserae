@@ -1,5 +1,5 @@
 use build_setters_macro::BuildSetters;
-use gpui::{DefiniteLength, Relative, Rems, phi, relative, rems};
+use gpui::{DefiniteLength, Relative, Rems, phi, rems};
 use palette::{IntoColor, Mix, Oklab, Oklaba};
 
 use crate::{Theme, ThemeSetKind, color_from_hex};

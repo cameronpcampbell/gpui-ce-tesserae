@@ -20,26 +20,42 @@ pub fn color_from_hex<T: FromColorUnclamped<Rgba> + Clamp>(
         .map(|color| color.into_color())
 }
 
-#[derive(Clone)]
+#[derive(Clone, derive_more::Debug)]
 pub struct Theme {
+    #[debug("{:?}", HexColor(*bg_primary))]
     pub bg_primary: Oklaba,
+    #[debug("{:?}", HexColor(*bg_secondary))]
     pub bg_secondary: Oklaba,
+    #[debug("{:?}", HexColor(*bg_tertiary))]
     pub bg_tertiary: Oklaba,
+    #[debug("{:?}", HexColor(*bg_quaternary))]
     pub bg_quaternary: Oklaba,
+    #[debug("{:?}", HexColor(*bg_quinary))]
     pub bg_quinary: Oklaba,
+    #[debug("{:?}", HexColor(*bg_senary))]
     pub bg_senary: Oklaba,
 
+    #[debug("{:?}", HexColor(*fg_primary))]
     pub fg_primary: Oklaba,
+    #[debug("{:?}", HexColor(*fg_secondary))]
     pub fg_secondary: Oklaba,
+    #[debug("{:?}", HexColor(*fg_tertiary))]
     pub fg_tertiary: Oklaba,
 
+    #[debug("{:?}", HexColor(*fg_inverse_primary))]
     pub fg_inverse_primary: Oklaba,
+    #[debug("{:?}", HexColor(*fg_inverse_secondary))]
     pub fg_inverse_secondary: Oklaba,
+    #[debug("{:?}", HexColor(*fg_inverse_tertiary))]
     pub fg_inverse_tertiary: Oklaba,
 
+    #[debug("{:?}", HexColor(*accent_primary))]
     pub accent_primary: Oklaba,
+    #[debug("{:?}", HexColor(*accent_secondary))]
     pub accent_secondary: Oklaba,
+    #[debug("{:?}", HexColor(*accent_caution))]
     pub accent_caution: Oklaba,
+    #[debug("{:?}", HexColor(*accent_destruct))]
     pub accent_destruct: Oklaba,
 
     pub line_height: DefiniteLength,
@@ -91,6 +107,10 @@ pub struct Theme {
     pub padding_5xl: Rems,
 }
 
+#[allow(
+    dead_code,
+    reason = "constructed by Theme's derived Debug implementation"
+)]
 struct HexColor(Oklaba);
 
 #[inline(always)]
@@ -109,73 +129,9 @@ impl fmt::Debug for HexColor {
     }
 }
 
-impl fmt::Debug for Theme {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Theme")
-            .field("bg_primary", &HexColor(self.bg_primary))
-            .field("bg_secondary", &HexColor(self.bg_secondary))
-            .field("bg_tertiary", &HexColor(self.bg_tertiary))
-            .field("bg_quaternary", &HexColor(self.bg_quaternary))
-            .field("bg_quinary", &HexColor(self.bg_quinary))
-            .field("bg_senary", &HexColor(self.bg_senary))
-            .field("fg_primary", &HexColor(self.fg_primary))
-            .field("fg_secondary", &HexColor(self.fg_secondary))
-            .field("fg_tertiary", &HexColor(self.fg_tertiary))
-            .field("fg_inverse_primary", &HexColor(self.fg_inverse_primary))
-            .field("fg_inverse_secondary", &HexColor(self.fg_inverse_secondary))
-            .field("fg_inverse_tertiary", &HexColor(self.fg_inverse_tertiary))
-            .field("accent_primary", &HexColor(self.accent_primary))
-            .field("accent_secondary", &HexColor(self.accent_secondary))
-            .field("accent_caution", &HexColor(self.accent_caution))
-            .field("accent_destruct", &HexColor(self.accent_destruct))
-            .field("line_height", &self.line_height)
-            .field("text_size_xs", &self.text_size_xs)
-            .field("text_size_sm", &self.text_size_sm)
-            .field("text_size_base", &self.text_size_base)
-            .field("text_size_lg", &self.text_size_lg)
-            .field("text_size_xl", &self.text_size_xl)
-            .field("text_size_2xl", &self.text_size_2xl)
-            .field("text_size_3xl", &self.text_size_3xl)
-            .field("text_size_4xl", &self.text_size_4xl)
-            .field("text_size_5xl", &self.text_size_5xl)
-            .field("text_size_6xl", &self.text_size_6xl)
-            .field("text_size_7xl", &self.text_size_7xl)
-            .field("text_size_8xl", &self.text_size_8xl)
-            .field("text_size_9xl", &self.text_size_9xl)
-            .field("size_xs", &self.size_xs)
-            .field("size_sm", &self.size_sm)
-            .field("size_md", &self.size_md)
-            .field("size_lg", &self.size_lg)
-            .field("size_xl", &self.size_xl)
-            .field("size_2xl", &self.size_2xl)
-            .field("size_3xl", &self.size_3xl)
-            .field("size_4xl", &self.size_4xl)
-            .field("size_5xl", &self.size_5xl)
-            .field("size_6xl", &self.size_6xl)
-            .field("radii_xs", &self.radii_xs)
-            .field("radii_sm", &self.radii_sm)
-            .field("radii_md", &self.radii_md)
-            .field("radii_lg", &self.radii_lg)
-            .field("radii_xl", &self.radii_xl)
-            .field("radii_2xl", &self.radii_2xl)
-            .field("radii_3xl", &self.radii_3xl)
-            .field("radii_4xl", &self.radii_4xl)
-            .field("padding_xs", &self.padding_xs)
-            .field("padding_sm", &self.padding_sm)
-            .field("padding_md", &self.padding_md)
-            .field("padding_lg", &self.padding_lg)
-            .field("padding_xl", &self.padding_xl)
-            .field("padding_2xl", &self.padding_2xl)
-            .field("padding_3xl", &self.padding_3xl)
-            .field("padding_4xl", &self.padding_4xl)
-            .field("padding_5xl", &self.padding_5xl)
-            .finish()
-    }
-}
-
 impl Theme {
-    const HOVER_FEEDBACK: f32 = 0.04;
-    const ACTIVE_FEEDBACK: f32 = 0.08;
+    const HOVER_FEEDBACK: f32 = 0.025;
+    const ACTIVE_FEEDBACK: f32 = 0.05;
 
     pub fn read_global(cx: &App) -> &Theme {
         let theme_set_kind = *cx.global::<ThemeSetKindState>().0.read(cx);

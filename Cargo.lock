@@ -5511,6 +5511,7 @@ name = "tesserae_theme"
 version = "0.1.0"
 dependencies = [
  "build_setters_macro",
+ "derive_more",
  "gpui-ce",
  "palette",
  "tesserae_utils",

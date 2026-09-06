@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 build_setters_macro.workspace = true
+derive_more.workspace = true
 gpui.workspace = true
 palette.workspace = true
 tesserae_utils.workspace = true
