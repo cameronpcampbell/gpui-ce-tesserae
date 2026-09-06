@@ -1,6 +1,6 @@
 use palette::{
-    Clamp, FromColor, Hsla, IntoColor, LinSrgba, Mix, Oklaba, Srgba, WithAlpha,
-    color_difference::EuclideanDistance, convert::FromColorUnclamped,
+    Clamp, FromColor, Hsla, IntoColor, IsWithinBounds, LinSrgba, Mix, Oklaba, Srgba,
+    WithAlpha, color_difference::EuclideanDistance, convert::FromColorUnclamped,
 };
 
 // WCAG 2.1 flare offset, which keeps contrast finite near black.
@@ -45,8 +45,12 @@ pub fn perceptual_contrast(
 }
 
 fn clipped_mix(base: Oklaba, endpoint: Oklaba, progress: f32) -> Oklaba {
-    let candidate = base.mix(endpoint, progress);
+    let candidate = base.mix(endpoint, progress.clamp(0.0, 1.0));
     let rgb: LinSrgba = LinSrgba::from_color_unclamped(candidate);
+
+    if rgb.is_within_bounds() {
+        return candidate;
+    }
 
     // Clipping keeps adjustments continuous near saturated blue.
     rgb.clamp().into_color()
@@ -64,63 +68,39 @@ fn neutral_color(lightness: f32, alpha: f32) -> Oklaba {
     Oklaba::new(lightness, 0.0, 0.0, alpha)
 }
 
-/// Finds a clipped mix whose displayed measurement reaches `target`.
+/// Mixes directly in gamut and corrects once when clipping changes the result.
 ///
 /// `measure` must return zero for `base` and increase toward `endpoint`.
-fn search_displayed_mix(
+fn compensated_mix(
     base: Oklaba,
     endpoint: Oklaba,
     target: f32,
-    initial_progress: f32,
+    progress: f32,
     tolerance: f32,
     measure: impl Fn(Oklaba) -> f32,
 ) -> Oklaba {
-    let (mut lower, mut upper) = (0.0, 1.0);
-
-    let mut progress = initial_progress.clamp(0.0, 1.0);
-    let (mut previous_progress, mut previous_measured) = (0.0, 0.0);
-    let mut best = base;
-    let mut best_error = target;
-
-    for _ in 0..24 {
-        let candidate = clipped_mix(base, endpoint, progress);
-        let measured = measure(gpui_displayed_color(candidate));
-        let error = (measured - target).abs();
-
-        if error < best_error {
-            best = candidate;
-            best_error = error;
-        }
-
-        if error <= tolerance {
-            break;
-        }
-
-        if measured < target {
-            lower = progress;
-        } else {
-            upper = progress;
-        }
-
-        // Estimate the target from the last two measurements. Flat measurements
-        // or estimates outside the bracket fall back to bisection.
-        let interpolated = progress
-            + (target - measured) * (progress - previous_progress)
-                / (measured - previous_measured);
-        previous_progress = progress;
-        previous_measured = measured;
-        let next = if interpolated > lower && interpolated < upper {
-            interpolated
-        } else {
-            (lower + upper) * 0.5
-        };
-        if next == progress {
-            break;
-        }
-        progress = next;
+    let progress = progress.clamp(0.0, 1.0);
+    let direct = base.mix(endpoint, progress);
+    let rgb: LinSrgba = LinSrgba::from_color_unclamped(direct);
+    if rgb.is_within_bounds() {
+        return direct;
     }
 
-    best
+    let first: Oklaba = rgb.clamp().into_color();
+    let first_measured = measure(gpui_displayed_color(first));
+    let first_error = (first_measured - target).abs();
+    if first_error <= tolerance || first_measured <= 0.0 {
+        return first;
+    }
+
+    let second = clipped_mix(base, endpoint, progress * target / first_measured);
+    let second_error = (measure(gpui_displayed_color(second)) - target).abs();
+
+    if second_error < first_error {
+        second
+    } else {
+        first
+    }
 }
 
 fn set_displayed_lightness(color: Oklaba, target: f32) -> Oklaba {
@@ -139,7 +119,7 @@ fn set_displayed_lightness(color: Oklaba, target: f32) -> Oklaba {
     let endpoint =
         neutral_color(if direction > 0.0 { 1.0 } else { 0.0 }, base.alpha);
 
-    search_displayed_mix(
+    compensated_mix(
         base,
         endpoint,
         target_delta,
@@ -159,10 +139,10 @@ pub trait PerceptualColor: Sized {
     /// Sets opacity with compensation based on the displayed color's lightness and chroma.
     fn perceptual_alpha(self, desired_alpha: f32) -> Self;
 
-    /// Sets the color's displayed lightness while preserving its opacity.
+    /// Adjusts toward the requested displayed lightness while preserving opacity.
     fn perceptual_brightness(self, intensity: f32) -> Self;
 
-    /// Moves the color toward white or black by the requested distance in OKLab.
+    /// Moves toward white or black by approximately the requested OKLab distance.
     fn perceptual_feedback(self, amount: f32) -> Self;
 }
 
@@ -231,7 +211,7 @@ where
             return endpoint.into_color();
         }
 
-        search_displayed_mix(
+        compensated_mix(
             base,
             endpoint,
             target,
@@ -254,6 +234,8 @@ mod tests {
 
     const BLACK: Oklaba = Oklaba::new(0.0, 0.0, 0.0, 1.0);
     const WHITE: Oklaba = Oklaba::new(1.0, 0.0, 0.0, 1.0);
+    const LIGHTNESS_TOLERANCE: f32 = 2e-3;
+    const FEEDBACK_TOLERANCE: f32 = 2e-4;
 
     fn assert_close(actual: f32, expected: f32) {
         assert_close_within(actual, expected, 1e-6);
@@ -399,7 +381,7 @@ mod tests {
     fn srgb_samples() -> impl Iterator<Item = Srgba> {
         let channels = [0.0, 0.25, 0.5, 0.75, 1.0];
         // Exercise colors between grid points without a random test dependency.
-        let interior = (0..64).scan(0x5eed_u32, |state, _| {
+        let interior = (0..256).scan(0x5eed_u32, |state, _| {
             let [red, green, blue] = std::array::from_fn(|_| {
                 *state = state.wrapping_mul(1664525).wrapping_add(1013904223);
                 (*state >> 8) as f32 / (1_u32 << 24) as f32
@@ -462,6 +444,11 @@ mod tests {
     }
 
     fn assert_in_gamut(color: Oklaba) {
+        assert!(
+            [color.color.l, color.color.a, color.color.b, color.alpha]
+                .into_iter()
+                .all(f32::is_finite)
+        );
         let rgb: LinSrgb = LinSrgb::from_color_unclamped(color.color);
         assert!(
             [rgb.red, rgb.green, rgb.blue]
@@ -496,7 +483,8 @@ mod tests {
                 let displayed = displayed_color(adjusted);
                 let lightness = displayed.color.l;
                 assert!(
-                    (lightness - intensity.clamp(0.0, 1.0)).abs() < 2e-6,
+                    (lightness - intensity.clamp(0.0, 1.0)).abs()
+                        < LIGHTNESS_TOLERANCE,
                     "base {color:?}, intensity {intensity}: lightness {lightness}",
                 );
                 assert!(lightness >= previous_lightness - 1e-6);
@@ -571,7 +559,11 @@ mod tests {
                     let adjusted = color.perceptual_feedback(direction * amount);
                     let displayed = displayed_color(adjusted);
                     let strength = rest.color.distance(displayed.color);
-                    let tolerance = if amount <= 1e-4 { 2e-6 } else { 1e-4 };
+                    let tolerance = if amount <= 1e-4 {
+                        2e-6
+                    } else {
+                        FEEDBACK_TOLERANCE
+                    };
                     assert!(
                         (strength - amount.min(available)).abs() < tolerance,
                         "base {color:?}, amount {}: distance {strength}",
