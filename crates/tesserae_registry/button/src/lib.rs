@@ -1,18 +1,19 @@
 use std::rc::Rc;
 
+use focus_ring::FocusRing;
 use gpui::{
     AnyElement, App, ClickEvent, DurationWithEasing, ElementId, FontWeight,
-    InteractiveElement, IntoElement, Lerp, MouseButton, ParentElement, Rems,
-    RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    InteractiveElement, IntoElement, Lerp, ParentElement, Rems, RenderOnce,
+    SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window,
     ease_in_out, linear_color_stop, linear_gradient, millis, prelude::FluentBuilder,
     selectors::class,
 };
 use palette::{Oklaba, WithAlpha};
+use tesserae_base::button::BaseButton;
 use tesserae_utils::{
     PerceptualColor, StyledElement, WindowUtils, kinds, use_focus_handle,
 };
 
-use smallvec::SmallVec;
 use tesserae_theme::{Theme, ThemeFgKind};
 
 #[derive(IntoElement)]
@@ -21,15 +22,11 @@ pub struct Button {
     size: ButtonSizeKind,
     variant: ButtonVariantKind,
     disabled: bool,
+    focusable_when_disabled: bool,
     on_click: Option<Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>>,
-    children: SmallVec<[AnyElement; 2]>,
+    aria_label: Option<SharedString>,
+    children: Vec<AnyElement>,
     style: StyleRefinement,
-}
-
-impl ParentElement for Button {
-    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
-        self.children.extend(elements);
-    }
 }
 
 impl Button {
@@ -39,8 +36,10 @@ impl Button {
             size: ButtonSizeKind::default(),
             variant: ButtonVariantKind::default(),
             disabled: false,
+            focusable_when_disabled: false,
             on_click: None,
-            children: SmallVec::new(),
+            aria_label: None,
+            children: Vec::new(),
             style: StyleRefinement::default(),
         }
     }
@@ -104,11 +103,21 @@ impl Button {
         self
     }
 
+    pub fn focusable_when_disabled(mut self, focusable: bool) -> Self {
+        self.focusable_when_disabled = focusable;
+        self
+    }
+
+    pub fn aria_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.aria_label = Some(label.into());
+        self
+    }
+
     pub fn on_click(
         mut self,
-        on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
+        handler: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
     ) -> Self {
-        self.on_click = Some(Rc::new(on_click));
+        self.on_click = Some(Rc::new(handler));
         self
     }
 }
@@ -123,8 +132,15 @@ impl RenderOnce for Button {
         let theme = Theme::read_global(cx);
         let disabled = self.disabled;
 
-        div()
-            .id(self.id)
+        BaseButton::new(self.id.clone())
+            .disabled(disabled)
+            .focusable_when_disabled(self.focusable_when_disabled)
+            .when_some(self.aria_label, |this, label| this.aria_label(label))
+            .when_some(self.on_click, |this, on_click| {
+                this.on_click(move |event, window, cx| {
+                    on_click(event, window, cx);
+                })
+            })
             .rounded_smoothing_1()
             .items_center()
             .justify_center()
@@ -139,27 +155,18 @@ impl RenderOnce for Button {
             })
             .when_else(
                 !disabled,
-                |this| {
-                    this.track_focus(&focus_handle).cursor_pointer().when_some(
-                        self.on_click,
-                        |this, on_click| {
-                            this.on_click(move |event, window, cx| {
-                                on_click(event, window, cx);
-                            })
-                        },
-                    )
-                },
-                |this| {
-                    this.cursor_not_allowed().opacity(0.48).on_mouse_down(
-                        MouseButton::Left,
-                        |_, _, cx| {
-                            cx.stop_propagation();
-                        },
-                    )
-                },
+                |this| this.cursor_pointer(),
+                |this| this.cursor_not_allowed().opacity(0.48),
             )
+            .child(FocusRing::new((self.id, "focus_ring"), focus_handle))
             .children(self.children)
             .refine_style(&self.style)
+    }
+}
+
+impl ParentElement for Button {
+    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
+        self.children.extend(elements);
     }
 }
 
