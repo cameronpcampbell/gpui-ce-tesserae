@@ -125,7 +125,7 @@ impl Render for Root {
 
                 Switch::new("switch")
                     .checked(*switch_state.read(cx))
-                    .on_click(move |checked, _window, cx| {
+                    .on_change(move |checked, _window, cx| {
                         switch_state.update(cx, |this, cx| {
                             *this = *checked;
                             cx.notify();

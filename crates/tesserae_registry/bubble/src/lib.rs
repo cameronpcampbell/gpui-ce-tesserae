@@ -63,7 +63,7 @@ impl RenderOnce for Bubble {
             .children(self.children)
             .apply_kind(self.variant, theme)
             .apply_kind(self.anchor, theme)
-            .refine(self.style)
+            .refine_style(&self.style)
     }
 }
 

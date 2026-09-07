@@ -159,7 +159,7 @@ impl RenderOnce for Button {
                 },
             )
             .children(self.children)
-            .refine(self.style)
+            .refine_style(&self.style)
     }
 }
 

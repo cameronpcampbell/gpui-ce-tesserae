@@ -45,7 +45,6 @@ impl RenderOnce for FocusRing {
             .ring(self.thickness)
             .ring_color(focus_ring_color.with_alpha(0.))
             .inset(px(-6.))
-            .refine(self.style)
             .transitions(|transitions| {
                 transitions
                     .inset(millis(120).with_easing(ease_in_out))
@@ -55,6 +54,7 @@ impl RenderOnce for FocusRing {
             .when(self.focus_handle.is_focused(window), |ring| {
                 ring.inset_0().ring_color(focus_ring_color)
             })
+            .refine_style(&self.style)
     }
 }
 

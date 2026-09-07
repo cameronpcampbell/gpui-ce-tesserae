@@ -115,7 +115,7 @@ impl RenderOnce for Input {
                     .line_height(theme.line_height)
                     .font_family("Geist")
                     .font_weight(FontWeight::NORMAL)
-                    .refine(self.style),
+                    .refine_style(&self.style),
             )
     }
 }
