@@ -8,7 +8,7 @@ members = [
   "crates/tesserae_registry/button",
   "crates/tesserae_registry/input",
   "crates/playground",
-  "crates/tesserae_registry/focus_ring", "crates/tesserae_registry/bubble", "crates/tesserae_registry/switch",
+  "crates/tesserae_registry/focus_ring", "crates/tesserae_registry/bubble", "crates/tesserae_registry/switch", "crates/tesserae_base",
 ]
 
 [workspace.dependencies]
@@ -16,6 +16,7 @@ build_setters_macro = { path = "crates/build_setters_macro" }
 gpui_macro_utils = { path = "crates/gpui_macro_utils" }
 tesserae_utils = { path = "crates/tesserae_utils" }
 tesserae_theme = { path = "crates/tesserae_theme" }
+tesserae_base = { path = "crates/tesserae_base" }
 
 gpui = { package = "gpui-ce", git = "https://github.com/gpui-ce/gpui-ce" }
 gpui_platform = { package = "gpui_ce_platform", git = "https://github.com/gpui-ce/gpui-ce" }

@@ -1,97 +1,24 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ClickEvent, DispatchPhase, DurationWithEasing, ElementId, Entity,
-    InteractiveElement, IntoElement, Lerp, MouseButton, MouseMoveEvent,
-    ParentElement, Pixels, RenderOnce, StatefulInteractiveElement, StyleRefinement,
-    Styled, Window, canvas, div, ease_in_out, linear_color_stop, linear_gradient,
-    millis, prelude::FluentBuilder, px, selectors::class,
+    App, DurationWithEasing, ElementId, InteractiveElement, IntoElement, Lerp,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement,
+    StyleRefinement, Styled, Window, div, ease_in_out, linear_color_stop,
+    linear_gradient, millis, prelude::FluentBuilder, selectors::class,
 };
 use palette::WithAlpha;
-use tesserae_utils::{PerceptualColor, StyledElement, kinds, use_focus_handle};
-
+use tesserae_base::switch::{BaseSwitch, BaseSwitchThumb};
 use tesserae_theme::Theme;
+use tesserae_utils::{PerceptualColor, StyledElement, kinds};
 
-const DRAG_THRESHOLD: Pixels = px(10.);
 type OnClick = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
-
-#[derive(Clone, Copy, Default)]
-struct DragState {
-    start_x: Option<Pixels>,
-    dragged_to: Option<bool>,
-}
-
-impl DragState {
-    fn start(&mut self, x: Pixels) {
-        self.start_x = Some(x);
-        self.dragged_to = None;
-    }
-
-    fn update(&mut self, x: Pixels) -> bool {
-        let Some(start_x) = self.start_x else {
-            return false;
-        };
-
-        let previous = self.dragged_to;
-        let delta = x - start_x;
-
-        if delta > DRAG_THRESHOLD {
-            self.dragged_to = Some(true);
-        } else if delta < -DRAG_THRESHOLD {
-            self.dragged_to = Some(false);
-        }
-
-        self.dragged_to != previous
-    }
-
-    fn finish(
-        &mut self,
-        x: Pixels,
-        checked: bool,
-        released_inside: bool,
-    ) -> Option<bool> {
-        self.update(x);
-
-        let next = match self.dragged_to {
-            Some(next) if next != checked => Some(next),
-            Some(_) => None,
-            None if released_inside => Some(!checked),
-            None => None,
-        };
-
-        *self = Self::default();
-        next
-    }
-}
-
-fn drag_tracker(drag_state: Entity<DragState>) -> impl IntoElement {
-    canvas(
-        |_, _, _| (),
-        move |_, _, window, _| {
-            window.on_mouse_event(
-                move |event: &MouseMoveEvent, phase, _window, cx| {
-                    if phase != DispatchPhase::Capture || !event.dragging() {
-                        return;
-                    }
-
-                    drag_state.update(cx, |state, cx| {
-                        if state.update(event.position.x) {
-                            cx.notify();
-                        }
-                    });
-                },
-            );
-        },
-    )
-    .absolute()
-    .inset_0()
-}
 
 #[derive(IntoElement)]
 pub struct Switch {
     id: ElementId,
     checked: bool,
     disabled: bool,
+    aria_label: Option<SharedString>,
     on_click: Option<OnClick>,
     style: StyleRefinement,
 }
@@ -102,6 +29,7 @@ impl Switch {
             id: id.into(),
             checked: false,
             disabled: false,
+            aria_label: None,
             on_click: None,
             style: StyleRefinement::default(),
         }
@@ -117,6 +45,11 @@ impl Switch {
         self
     }
 
+    pub fn aria_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.aria_label = Some(label.into());
+        self
+    }
+
     pub fn on_click(
         mut self,
         on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
@@ -127,44 +60,21 @@ impl Switch {
 }
 
 impl RenderOnce for Switch {
-    fn render(
-        self,
-        window: &mut gpui::Window,
-        cx: &mut gpui::App,
-    ) -> impl gpui::IntoElement {
-        let _focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
-
-        let checked = self.checked;
-        let drag_state = window.use_keyed_state(
-            (self.id.clone(), "state:drag"),
-            cx,
-            |_window, _cx| DragState::default(),
-        );
-        let can_change = !self.disabled && self.on_click.is_some();
-        let drag_active = drag_state.read(cx).start_x.is_some();
-
-        if !can_change && drag_active {
-            drag_state.update(cx, |state, _cx| *state = DragState::default());
-        }
-
-        let effective_checked = if can_change {
-            drag_state.read(cx).dragged_to.unwrap_or(checked)
-        } else {
-            checked
-        };
-
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = Theme::read_global(cx);
+        let checked = self.checked;
+        let disabled = self.disabled;
 
         let knob_height = theme.size_lg.to_pixels(window.rem_size());
-        let knob_width = knob_height * theme.knob_ratio.0;
-
+        let knob_width = knob_height * theme.knob_ratio.as_f32();
         let padding = theme.padding_sm.to_pixels(window.rem_size());
 
         let width = padding * 2 + knob_width + knob_height;
         let height = knob_height + padding * 2;
 
-        div()
-            .id(self.id.clone())
+        BaseSwitch::new(self.id.clone())
+            .checked(checked)
+            .disabled(disabled)
             .cursor_pointer()
             .w(width)
             .h(height)
@@ -174,9 +84,31 @@ impl RenderOnce for Switch {
             .bg(theme.bg_secondary)
             .inset_ring_1()
             .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
-            .apply_kind(SwitchStateKind::from_bool(effective_checked), theme)
+            .apply_kind(SwitchStateKind::Disabled, theme)
+            .select(class(BaseSwitch::CHECKED_CLASS), |style| {
+                style.apply_kind(SwitchStateKind::Enabled, theme)
+            })
+            .select(class(BaseSwitch::DISABLED_CLASS), |style| {
+                style.cursor_not_allowed().opacity(0.48)
+            })
             .transitions(|transitions| {
                 transitions.bg(millis(200).with_easing(ease_in_out))
+            })
+            .when(!disabled, |this| {
+                this.hover(|style| {
+                    style
+                        .bg(theme.hover_feedback(theme.bg_secondary))
+                        .select_children(class("overlay"), |style| {
+                            style.bg(theme.hover_feedback(theme.accent_primary))
+                        })
+                })
+                .active(|style| {
+                    style
+                        .bg(theme.active_feedback(theme.bg_secondary))
+                        .select_children(class("overlay"), |style| {
+                            style.bg(theme.active_feedback(theme.accent_primary))
+                        })
+                })
             })
             .child(
                 div()
@@ -201,106 +133,29 @@ impl RenderOnce for Switch {
                         transitions.bg(millis(200).with_easing(ease_in_out))
                     }),
             )
-            .child(
-                div()
-                    .id((self.id.clone(), "knob"))
-                    .class("knob")
+            .thumb(
+                BaseSwitchThumb::new((self.id, "thumb"))
                     .absolute()
                     .w(knob_width)
                     .h(knob_height)
                     .rounded_full()
                     .rounded_smoothing_1()
-                    .when(effective_checked, |this| this.right(padding))
+                    .select(class(BaseSwitchThumb::CHECKED_CLASS), |style| {
+                        style.right(padding)
+                    })
                     .transitions(|transitions| {
                         transitions
                             .bg(millis(200).with_easing(ease_in_out))
                             .right(millis(100).with_easing(ease_in_out))
                     }),
             )
-            .when_else(
-                !self.disabled,
-                |this| {
-                    this.hover(|refinement| {
-                        refinement
-                            .bg(theme.hover_feedback(theme.bg_secondary))
-                            .select_children(class("overlay"), |refinement| {
-                                refinement
-                                    .bg(theme.hover_feedback(theme.accent_primary))
-                            })
-                    })
-                    .active(|refinement| {
-                        refinement
-                            .bg(theme.active_feedback(theme.bg_secondary))
-                            .select_children(class("overlay"), |refinement| {
-                                refinement
-                                    .bg(theme.active_feedback(theme.accent_primary))
-                            })
-                    })
-                    .when_some(
-                        self.on_click,
-                        |this, on_click| {
-                            let drag_state_on_down = drag_state.clone();
-                            let drag_state_on_up = drag_state.clone();
-                            let on_mouse_up = on_click.clone();
-
-                            this.child(drag_tracker(drag_state))
-                                .on_mouse_down_all(
-                                    move |event, phase, hitbox, window, cx| {
-                                        if phase == DispatchPhase::Bubble
-                                            && event.button == MouseButton::Left
-                                            && hitbox.is_hovered(window)
-                                        {
-                                            drag_state_on_down.update(
-                                                cx,
-                                                |state, _cx| {
-                                                    state.start(event.position.x)
-                                                },
-                                            );
-                                        }
-                                    },
-                                )
-                                .on_mouse_up_all(
-                                    move |event, phase, hitbox, window, cx| {
-                                        if phase != DispatchPhase::Capture
-                                            || event.button != MouseButton::Left
-                                        {
-                                            return;
-                                        }
-
-                                        let next = drag_state_on_up.update(
-                                            cx,
-                                            |state, cx| {
-                                                if state.start_x.is_some() {
-                                                    let next = state.finish(
-                                                        event.position.x,
-                                                        checked,
-                                                        hitbox.bounds.contains(
-                                                            &event.position,
-                                                        ),
-                                                    );
-                                                    cx.notify();
-                                                    next
-                                                } else {
-                                                    None
-                                                }
-                                            },
-                                        );
-
-                                        if let Some(next) = next {
-                                            on_mouse_up(&next, window, cx);
-                                        }
-                                    },
-                                )
-                                .on_click(move |event, window, cx| {
-                                    if !matches!(event, ClickEvent::Mouse(_)) {
-                                        on_click(&!checked, window, cx);
-                                    }
-                                })
-                        },
-                    )
-                },
-                |this| this.cursor_not_allowed().opacity(0.48),
-            )
+            .when_some(self.aria_label, |this, label| this.aria_label(label))
+            .when_some(self.on_click, |this, on_click| {
+                this.on_change(move |checked, window, cx| {
+                    on_click(checked, window, cx)
+                })
+            })
+            .refine(self.style)
     }
 }
 
@@ -314,22 +169,128 @@ kinds!(pub SwitchStateKind<_, &Theme> {
     #[default]
     Disabled (this, theme) => {
         this
-            .select_children(class("knob"), |refinement| refinement.bg(theme.fg_primary))
+            .select_children(class(BaseSwitchThumb::CLASS), |style| style.bg(theme.fg_primary))
     },
 
     Enabled (this, theme) => {
         this
-            .select_children(class("knob"), |refinement| {
-                refinement.bg(theme
+            .select_children(class(BaseSwitchThumb::CLASS), |style| {
+                style.bg(theme
                     .accent_primary
                     .best_contrast([theme.bg_secondary, theme.fg_primary]))
             })
-            .select_descendants(class("overlay"), |refinement| refinement.opacity(1.))
+            .select_descendants(class("overlay"), |style| style.opacity(1.))
     },
 });
 
-impl SwitchStateKind {
-    fn from_bool(value: bool) -> Self {
-        if value { Self::Enabled } else { Self::Disabled }
+#[cfg(all(test, feature = "test-support"))]
+mod tests {
+    use gpui::{
+        AppContext, Bounds, Context, Entity, InteractiveElement, IntoElement,
+        Modifiers, MouseButton, ParentElement, Pixels, Render, Styled,
+        TestAppContext, VisualTestContext, Window, div, point, px,
+    };
+    use tesserae_theme::{ThemeConfig, ThemeSet, ThemeSetKind};
+
+    use super::Switch;
+
+    const SWITCH_HOST: &str = "switch-host";
+
+    struct SwitchTestView {
+        checked: bool,
+        disabled: bool,
+        changes: Vec<bool>,
+    }
+
+    impl Render for SwitchTestView {
+        fn render(
+            &mut self,
+            _window: &mut Window,
+            cx: &mut Context<Self>,
+        ) -> impl IntoElement {
+            div().size_full().child(
+                div()
+                    .absolute()
+                    .left(px(40.))
+                    .top(px(40.))
+                    .size(px(100.))
+                    .debug_selector(|| SWITCH_HOST.to_owned())
+                    .child(
+                        Switch::new("switch-under-test")
+                            .checked(self.checked)
+                            .disabled(self.disabled)
+                            .on_click(cx.listener(|this, checked, _window, cx| {
+                                this.checked = *checked;
+                                this.changes.push(*checked);
+                                cx.notify();
+                            })),
+                    ),
+            )
+        }
+    }
+
+    fn setup(
+        cx: &mut TestAppContext,
+        checked: bool,
+        disabled: bool,
+    ) -> (Entity<SwitchTestView>, &mut VisualTestContext) {
+        cx.update(|cx| {
+            ThemeSet::set_global(cx, ThemeSet::generate(ThemeConfig::default()));
+            ThemeSetKind::set_global(cx, ThemeSetKind::Dark);
+        });
+
+        cx.add_window_view(move |_window, _cx| SwitchTestView {
+            checked,
+            disabled,
+            changes: Vec::new(),
+        })
+    }
+
+    fn host_bounds(cx: &mut VisualTestContext) -> Bounds<Pixels> {
+        cx.debug_bounds(SWITCH_HOST)
+            .expect("switch host should be rendered")
+    }
+
+    fn state(
+        view: &Entity<SwitchTestView>,
+        cx: &VisualTestContext,
+    ) -> (bool, Vec<bool>) {
+        cx.read_entity(view, |view, _cx| (view.checked, view.changes.clone()))
+    }
+
+    #[gpui::test]
+    fn styled_switch_delegates_interaction_and_disabled_state(
+        cx: &mut TestAppContext,
+    ) {
+        let (view, cx) = setup(cx, false, false);
+        let bounds = host_bounds(cx);
+        let inside = point(bounds.left() + px(20.), bounds.top() + px(10.));
+
+        cx.simulate_click(inside, Modifiers::none());
+        assert_eq!(state(&view, cx), (true, vec![true]));
+
+        let outside_left = point(bounds.left() - px(20.), inside.y);
+        cx.simulate_mouse_down(inside, MouseButton::Left, Modifiers::none());
+        cx.simulate_mouse_move(outside_left, MouseButton::Left, Modifiers::none());
+        cx.simulate_mouse_up(outside_left, MouseButton::Left, Modifiers::none());
+        assert_eq!(state(&view, cx), (false, vec![true, false]));
+
+        view.update(cx, |view, cx| {
+            view.disabled = true;
+            cx.notify();
+        });
+        let outside_right = point(bounds.right() + px(20.), inside.y);
+        cx.simulate_click(inside, Modifiers::none());
+        cx.simulate_mouse_down(inside, MouseButton::Left, Modifiers::none());
+        cx.simulate_mouse_move(outside_right, MouseButton::Left, Modifiers::none());
+        cx.simulate_mouse_up(outside_right, MouseButton::Left, Modifiers::none());
+        assert_eq!(state(&view, cx), (false, vec![true, false]));
+
+        view.update(cx, |view, cx| {
+            view.disabled = false;
+            cx.notify();
+        });
+        cx.simulate_click(inside, Modifiers::none());
+        assert_eq!(state(&view, cx), (true, vec![true, false, true]));
     }
 }

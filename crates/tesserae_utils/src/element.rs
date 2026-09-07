@@ -7,8 +7,8 @@ pub trait StyledElement: Styled + Sized {
         kind.apply(self, data)
     }
 
-    fn refine(mut self, refinement: StyleRefinement) -> Self {
-        self.style().refine(&refinement);
+    fn refine_style(mut self, refinement: &StyleRefinement) -> Self {
+        self.style().refine(refinement);
         self
     }
 }
