@@ -101,9 +101,9 @@ impl RenderOnce for BaseButton {
         let on_click = if disabled { None } else { self.on_click };
 
         self.base
+            .role(Role::Button)
             .refine_style(&self.style)
             .when(disabled, |this| this.class(Self::DISABLED_CLASS))
-            .role(Role::Button)
             .when_some(self.aria_label, |this, label| this.aria_label(label))
             .when(focusable, |this| this.track_focus(&focus_handle))
             .when(disabled, |this| {

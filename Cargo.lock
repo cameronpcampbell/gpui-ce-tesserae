@@ -2150,7 +2150,7 @@ dependencies = [
 [[package]]
 name = "gpui-ce"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "accesskit",
  "anyhow",
@@ -2232,7 +2232,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_collections"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "gpui_ce_util",
  "indexmap",
@@ -2242,7 +2242,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_derive_refineable"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2252,7 +2252,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_elements"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "gpui-ce",
  "palette",
@@ -2263,7 +2263,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_linux"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "accesskit",
  "accesskit_unix",
@@ -2314,7 +2314,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_macos"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -2363,7 +2363,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_macros"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2374,7 +2374,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_media"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -2389,7 +2389,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_parley"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "anyhow",
  "fontique",
@@ -2406,7 +2406,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_platform"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "console_error_panic_hook",
  "gpui-ce",
@@ -2419,7 +2419,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_refineable"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "gpui_ce_derive_refineable",
 ]
@@ -2427,7 +2427,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_scheduler"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "async-task",
  "backtrace",
@@ -2442,7 +2442,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_shared_string"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "schemars",
  "serde",
@@ -2452,7 +2452,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_sum_tree"
 version = "0.2.2"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "heapless",
  "log",
@@ -2463,7 +2463,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_util"
 version = "0.2.6"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "anyhow",
  "log",
@@ -2473,7 +2473,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_web"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "anyhow",
  "console_error_panic_hook",
@@ -2496,7 +2496,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_wgpu"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -2521,7 +2521,7 @@ dependencies = [
 [[package]]
 name = "gpui_ce_windows"
 version = "0.1.0"
-source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#3d2aff6b3426101495000d83195cf538590c2797"
+source = "git+https://github.com/cameronpcampbell/gpui-ce?branch=multiverse_crossover#851870e020523e915ae235a01255f39e9289839f"
 dependencies = [
  "accesskit",
  "accesskit_windows",

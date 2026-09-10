@@ -127,11 +127,11 @@ impl RenderOnce for BaseSwitch {
 
         let base = self
             .base
+            .role(Role::Switch)
             .refine_style(&self.style)
             .when(effective_checked, |this| this.class(Self::CHECKED_CLASS))
             .when(!effective_checked, |this| this.class(Self::UNCHECKED_CLASS))
             .when(self.disabled, |this| this.class(Self::DISABLED_CLASS))
-            .role(Role::Switch)
             .aria_toggled(Toggled::from(checked))
             .when_some(self.aria_label, |this, label| this.aria_label(label))
             .when(!disabled, |this| this.track_focus(&focus_handle))
