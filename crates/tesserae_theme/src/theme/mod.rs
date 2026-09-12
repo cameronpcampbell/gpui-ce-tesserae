@@ -85,7 +85,7 @@ pub struct Theme {
     pub size_5xl: Rems,
     pub size_6xl: Rems,
 
-    pub knob_ratio: Relative,
+    pub thumb_ratio: Relative,
 
     pub radii_xs: Rems,
     pub radii_sm: Rems,

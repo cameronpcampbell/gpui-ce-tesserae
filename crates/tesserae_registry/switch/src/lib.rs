@@ -9,7 +9,7 @@ use gpui::{
 use palette::WithAlpha;
 use tesserae_base::switch::{BaseSwitch, BaseSwitchThumb, OnChange};
 use tesserae_theme::Theme;
-use tesserae_utils::{PerceptualColor, StyledElement, kinds};
+use tesserae_utils::{PerceptualColor, StyledElement};
 
 #[derive(IntoElement)]
 pub struct Switch {
@@ -70,12 +70,12 @@ impl RenderOnce for Switch {
         let checked = self.checked;
         let disabled = self.disabled;
 
-        let knob_height = theme.size_lg.to_pixels(window.rem_size());
-        let knob_width = knob_height * theme.knob_ratio.as_f32();
+        let thumb_height = theme.size_lg.to_pixels(window.rem_size());
+        let thumb_width = thumb_height * theme.thumb_ratio.as_f32();
         let padding = theme.padding_sm.to_pixels(window.rem_size());
 
-        let width = padding * 2 + knob_width + knob_height;
-        let height = knob_height + padding * 2;
+        let width = padding * 2 + thumb_width + thumb_height;
+        let height = thumb_height + padding * 2;
 
         BaseSwitch::new(self.id.clone())
             .checked(checked)
@@ -90,35 +90,41 @@ impl RenderOnce for Switch {
             .bg(theme.bg_secondary)
             .inset_ring_1()
             .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
-            .apply_kind(SwitchStateKind::Disabled, theme)
-            .select(class(BaseSwitch::CHECKED_CLASS), |style| {
-                style
-                    .apply_kind(SwitchStateKind::Enabled, theme)
-                    .select_children(class(BaseSwitchThumb::CLASS), |style| {
-                        style.right(padding)
+            .select(class(BaseSwitch::CHECKED_CLASS), |refinement| {
+                refinement
+                    .select_children(class(BaseSwitchThumb::CLASS), |refinement| {
+                        refinement.right(padding).bg(theme
+                            .accent_primary
+                            .best_contrast([theme.bg_secondary, theme.fg_primary]))
+                    })
+                    .select_children(class("overlay"), |refinement| {
+                        refinement.opacity(1.)
                     })
             })
-            .select(class(BaseSwitch::DISABLED_CLASS), |style| {
-                style.cursor_not_allowed().opacity(0.48)
-            })
+            .when_else(
+                !disabled,
+                |this| {
+                    this.hover(|refinement| {
+                        refinement
+                            .bg(theme.hover_feedback(theme.bg_secondary))
+                            .select_children(class("overlay"), |refinement| {
+                                refinement
+                                    .bg(theme.hover_feedback(theme.accent_primary))
+                            })
+                    })
+                    .active(|refinement| {
+                        refinement
+                            .bg(theme.active_feedback(theme.bg_secondary))
+                            .select_children(class("overlay"), |refinement| {
+                                refinement
+                                    .bg(theme.active_feedback(theme.accent_primary))
+                            })
+                    })
+                },
+                |this| this.cursor_not_allowed().opacity(0.48),
+            )
             .transitions(|transitions| {
                 transitions.bg(millis(200).with_easing(ease_in_out))
-            })
-            .when(!disabled, |this| {
-                this.hover(|style| {
-                    style
-                        .bg(theme.hover_feedback(theme.bg_secondary))
-                        .select_children(class("overlay"), |style| {
-                            style.bg(theme.hover_feedback(theme.accent_primary))
-                        })
-                })
-                .active(|style| {
-                    style
-                        .bg(theme.active_feedback(theme.bg_secondary))
-                        .select_children(class("overlay"), |style| {
-                            style.bg(theme.active_feedback(theme.accent_primary))
-                        })
-                })
             })
             .child(
                 div()
@@ -146,10 +152,11 @@ impl RenderOnce for Switch {
             .child(
                 BaseSwitchThumb::new((self.id, "thumb"))
                     .absolute()
-                    .w(knob_width)
-                    .h(knob_height)
+                    .w(thumb_width)
+                    .h(thumb_height)
                     .rounded_full()
                     .rounded_smoothing_1()
+                    .bg(theme.fg_primary)
                     .transitions(|transitions| {
                         transitions
                             .bg(millis(200).with_easing(ease_in_out))
@@ -171,21 +178,3 @@ impl Styled for Switch {
         &mut self.style
     }
 }
-
-kinds!(pub SwitchStateKind<_, &Theme> {
-    #[default]
-    Disabled (this, theme) => {
-        this
-            .select_children(class(BaseSwitchThumb::CLASS), |style| style.bg(theme.fg_primary))
-    },
-
-    Enabled (this, theme) => {
-        this
-            .select_children(class(BaseSwitchThumb::CLASS), |style| {
-                style.bg(theme
-                    .accent_primary
-                    .best_contrast([theme.bg_secondary, theme.fg_primary]))
-            })
-            .select_descendants(class("overlay"), |style| style.opacity(1.))
-    },
-});

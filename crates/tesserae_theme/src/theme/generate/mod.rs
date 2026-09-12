@@ -74,7 +74,7 @@ pub struct ThemeConfig {
     pub size_5xl: Rems,
     pub size_6xl: Rems,
 
-    pub knob_ratio: Relative,
+    pub thumb_ratio: Relative,
 
     pub radii_xs: Rems,
     pub radii_sm: Rems,
@@ -131,7 +131,7 @@ impl Default for ThemeConfig {
             size_5xl: rems(2.),
             size_6xl: rems(2.25),
 
-            knob_ratio: phi(),
+            thumb_ratio: phi(),
 
             radii_xs: rems(0.125),
             radii_sm: rems(0.375),
@@ -239,7 +239,7 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         size_5xl: config.size_5xl,
         size_6xl: config.size_6xl,
 
-        knob_ratio: config.knob_ratio,
+        thumb_ratio: config.thumb_ratio,
 
         radii_xs: config.radii_xs,
         radii_sm: config.radii_sm,
