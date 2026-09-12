@@ -90,8 +90,8 @@ impl RenderOnce for Input {
             .inset_ring_1()
             .flex()
             .justify_center()
-            .refine_styles_with_enum(self.size, (window, theme))
-            .refine_styles_with_enum(self.variant, theme)
+            .refine_style_with_enum(self.size, (window, theme))
+            .refine_style_with_enum(self.variant, theme)
             .when(!is_focused, |this| {
                 this.hover(|this| {
                     this.inset_ring_color(theme.hover_feedback(variant_ring_color))
@@ -169,9 +169,9 @@ pub enum InputSizeKind {
             refinement,
             window,
             theme,
-            theme.size_5xl,
+            theme.size_8xl,
             theme.text_size_sm,
-            theme.size_md,
+            theme.size_2xl,
             theme.radii_lg,
             theme.padding_xl,
         )
@@ -183,9 +183,9 @@ pub enum InputSizeKind {
             refinement,
             window,
             theme,
-            theme.size_6xl,
+            theme.size_9xl,
             theme.text_size_sm,
-            theme.size_md,
+            theme.size_2xl,
             theme.radii_lg,
             theme.padding_xl,
         )

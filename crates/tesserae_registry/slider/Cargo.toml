@@ -1,0 +1,15 @@
+[package]
+name = "slider"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+test-support = ["gpui/test-support", "tesserae_base/test-support"]
+
+[dependencies]
+gpui.workspace = true
+tesserae_base.workspace = true
+tesserae_theme.workspace = true
+tesserae_utils.workspace = true
+palette.workspace = true
+smallvec.workspace = true

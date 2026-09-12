@@ -84,6 +84,9 @@ pub struct Theme {
     pub size_4xl: Rems,
     pub size_5xl: Rems,
     pub size_6xl: Rems,
+    pub size_7xl: Rems,
+    pub size_8xl: Rems,
+    pub size_9xl: Rems,
 
     pub thumb_ratio: Relative,
 
@@ -295,6 +298,9 @@ impl Theme {
             ThemeSizeKind::X4l => self.size_4xl,
             ThemeSizeKind::X5l => self.size_5xl,
             ThemeSizeKind::X6l => self.size_6xl,
+            ThemeSizeKind::X7l => self.size_7xl,
+            ThemeSizeKind::X8l => self.size_8xl,
+            ThemeSizeKind::X9l => self.size_9xl,
         }
     }
 
@@ -388,6 +394,9 @@ pub enum ThemeSizeKind {
     X4l,
     X5l,
     X6l,
+    X7l,
+    X8l,
+    X9l,
 }
 
 #[derive(Clone, Copy)]

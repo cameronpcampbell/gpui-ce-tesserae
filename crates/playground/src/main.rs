@@ -9,6 +9,7 @@ use gpui_elements::editable_text::actions::{
 };
 use input::Input;
 use palette::Oklaba;
+use slider::Slider;
 use switch::Switch;
 use tesserae_theme::{Theme, ThemeConfig, ThemeSet, ThemeSetKind, color_from_hex};
 
@@ -132,12 +133,12 @@ impl Render for Root {
                         })
                     })
             })
+            .child(Slider::new("slider").w(px(400.)))
     }
 }
 
 fn main() {
     gpui_platform::application().with_assets(Assets).run(|cx| {
-        Assets::init(cx).ok();
         cx.bind_keys(default_bindings().as_keybindings(Some(DEFAULT_INPUT_CONTEXT)));
 
         cx.open_window(

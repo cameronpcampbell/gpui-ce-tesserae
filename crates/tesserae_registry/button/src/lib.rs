@@ -157,8 +157,8 @@ impl RenderOnce for Button {
             .line_height(theme.line_height)
             .font_family("Geist")
             .font_weight(FontWeight::MEDIUM)
-            .refine_styles_with_enum(self.size, (window, theme))
-            .refine_styles_with_enum(self.variant, theme)
+            .refine_style_with_enum(self.size, (window, theme))
+            .refine_style_with_enum(self.variant, theme)
             .when(!disabled, |this| {
                 this.hover(|styles| {
                     styles.bg(theme.hover_feedback(variant_background))
@@ -239,9 +239,9 @@ pub enum ButtonSizeKind {
             refinement,
             window,
             theme,
-            theme.size_3xl,
+            theme.size_6xl,
             theme.text_size_xs,
-            theme.size_xs,
+            theme.size_lg,
             theme.radii_md,
             theme.padding_lg,
         )
@@ -252,9 +252,9 @@ pub enum ButtonSizeKind {
         icon_size_styles(
             refinement,
             theme,
-            theme.size_3xl,
+            theme.size_6xl,
             theme.text_size_xs,
-            theme.size_xs,
+            theme.size_lg,
             theme.radii_md,
         )
     })]
@@ -265,9 +265,9 @@ pub enum ButtonSizeKind {
             refinement,
             window,
             theme,
-            theme.size_4xl,
+            theme.size_7xl,
             theme.text_size_xs,
-            theme.size_sm,
+            theme.size_xl,
             theme.radii_md,
             theme.padding_xl,
         )
@@ -278,9 +278,9 @@ pub enum ButtonSizeKind {
         icon_size_styles(
             refinement,
             theme,
-            theme.size_4xl,
+            theme.size_7xl,
             theme.text_size_xs,
-            theme.size_sm,
+            theme.size_xl,
             theme.radii_md,
         )
     })]
@@ -292,9 +292,9 @@ pub enum ButtonSizeKind {
             refinement,
             window,
             theme,
-            theme.size_5xl,
+            theme.size_8xl,
             theme.text_size_sm,
-            theme.size_md,
+            theme.size_2xl,
             theme.radii_lg,
             theme.padding_xl,
         )
@@ -305,9 +305,9 @@ pub enum ButtonSizeKind {
         icon_size_styles(
             refinement,
             theme,
-            theme.size_5xl,
+            theme.size_8xl,
             theme.text_size_sm,
-            theme.size_md,
+            theme.size_2xl,
             theme.radii_lg,
         )
     })]
@@ -318,9 +318,9 @@ pub enum ButtonSizeKind {
             refinement,
             window,
             theme,
-            theme.size_6xl,
+            theme.size_9xl,
             theme.text_size_sm,
-            theme.size_md,
+            theme.size_2xl,
             theme.radii_lg,
             theme.padding_xl,
         )
@@ -331,9 +331,9 @@ pub enum ButtonSizeKind {
         icon_size_styles(
             refinement,
             theme,
-            theme.size_6xl,
+            theme.size_9xl,
             theme.text_size_sm,
-            theme.size_md,
+            theme.size_2xl,
             theme.radii_lg,
         )
     })]

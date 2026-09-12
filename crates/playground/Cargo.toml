@@ -14,5 +14,6 @@ button = { path = "../tesserae_registry/button" }
 input = { path = "../tesserae_registry/input" }
 bubble = { path = "../tesserae_registry/bubble" }
 switch = { path = "../tesserae_registry/switch" }
+slider = { path = "../tesserae_registry/slider" }
 rust-embed = { version = "8.12.0", features = ["include-exclude"] }
 thiserror = "2.0.20"

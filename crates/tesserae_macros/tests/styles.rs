@@ -30,7 +30,7 @@ fn derives_classes_and_refinements() {
     assert_eq!(TestStyles::SecondaryAction.class_name(), "quiet");
 
     let element = TestElement::default()
-        .refine_styles_with_enum(TestStyles::SecondaryAction, &0.8);
+        .refine_style_with_enum(TestStyles::SecondaryAction, &0.8);
     let expected_class = StyleRefinement::default().class("quiet");
 
     assert_eq!(element.style.opacity, Some(0.4));
@@ -49,7 +49,7 @@ enum UnitStyles {
 #[test]
 fn defaults_styles_data_to_unit() {
     let element =
-        TestElement::default().refine_styles_with_enum(UnitStyles::Compact, ());
+        TestElement::default().refine_style_with_enum(UnitStyles::Compact, ());
 
     assert_eq!(element.style.display, Some(gpui::Display::Flex));
 }

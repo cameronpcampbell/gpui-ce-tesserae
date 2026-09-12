@@ -1,15 +1,19 @@
 [workspace]
-resolver = "1"
 members = [
   "crates/tesserae_macros",
   "crates/tesserae_utils",
   "crates/tesserae_cli",
   "crates/tesserae_theme",
+  "crates/playground",
   "crates/tesserae_registry/button",
   "crates/tesserae_registry/input",
-  "crates/playground",
-  "crates/tesserae_registry/focus_ring", "crates/tesserae_registry/bubble", "crates/tesserae_registry/switch", "crates/tesserae_base",
+  "crates/tesserae_registry/focus_ring",
+  "crates/tesserae_registry/bubble",
+  "crates/tesserae_registry/switch",
+  "crates/tesserae_registry/slider",
+  "crates/tesserae_base",
 ]
+resolver = "1"
 
 [workspace.dependencies]
 convert_case = "0.11"

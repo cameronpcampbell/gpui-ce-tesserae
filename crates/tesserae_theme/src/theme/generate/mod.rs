@@ -73,6 +73,9 @@ pub struct ThemeConfig {
     pub size_4xl: Rems,
     pub size_5xl: Rems,
     pub size_6xl: Rems,
+    pub size_7xl: Rems,
+    pub size_8xl: Rems,
+    pub size_9xl: Rems,
 
     pub thumb_ratio: Relative,
 
@@ -120,16 +123,19 @@ impl Default for ThemeConfig {
             text_size_8xl: rems(6.0),
             text_size_9xl: rems(8.0),
 
-            size_xs: rems(0.625),
-            size_sm: rems(0.75),
-            size_md: rems(0.875),
-            size_lg: rems(1.),
-            size_xl: rems(1.125),
-            size_2xl: rems(1.25),
-            size_3xl: rems(1.5),
-            size_4xl: rems(1.75),
-            size_5xl: rems(2.),
-            size_6xl: rems(2.25),
+            size_xs: rems(0.25),
+            size_sm: rems(0.375),
+            size_md: rems(0.5),
+            size_lg: rems(0.625),
+            size_xl: rems(0.75),
+            size_2xl: rems(0.875),
+            size_3xl: rems(1.),
+            size_4xl: rems(1.125),
+            size_5xl: rems(1.25),
+            size_6xl: rems(1.5),
+            size_7xl: rems(1.75),
+            size_8xl: rems(2.),
+            size_9xl: rems(2.25),
 
             thumb_ratio: phi(),
 
@@ -238,6 +244,9 @@ pub fn generate_theme(config: &ThemeConfig, kind: ThemeSetKind) -> Theme {
         size_4xl: config.size_4xl,
         size_5xl: config.size_5xl,
         size_6xl: config.size_6xl,
+        size_7xl: config.size_7xl,
+        size_8xl: config.size_8xl,
+        size_9xl: config.size_9xl,
 
         thumb_ratio: config.thumb_ratio,
 

@@ -53,7 +53,7 @@ impl RenderOnce for Bubble {
             .line_height(theme.line_height)
             .px(px(10.))
             .py(window.padding_for_height(
-                theme.size_6xl,
+                theme.size_9xl,
                 theme.text_size_sm,
                 theme.line_height,
             ) - px(2.))
@@ -62,8 +62,8 @@ impl RenderOnce for Bubble {
             .font_family("Geist")
             .font_weight(FontWeight::NORMAL)
             .children(self.children)
-            .refine_styles_with_enum(self.variant, theme)
-            .refine_styles_with_enum(self.anchor, theme)
+            .refine_style_with_enum(self.variant, theme)
+            .refine_style_with_enum(self.anchor, theme)
             .refine_style(&self.style)
     }
 }

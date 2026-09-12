@@ -3,7 +3,7 @@ use gpui::{Refineable, StyleRefinement, Styled};
 use crate::StylesEnum;
 
 pub trait StyledElement: Styled + Sized {
-    fn refine_styles_with_enum<'a, Style: StylesEnum>(
+    fn refine_style_with_enum<'a, Style: StylesEnum>(
         self,
         styles: Style,
         data: Style::Data<'a>,

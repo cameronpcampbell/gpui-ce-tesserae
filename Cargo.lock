@@ -4277,6 +4277,7 @@ dependencies = [
  "input",
  "palette",
  "rust-embed",
+ "slider",
  "switch",
  "tesserae_theme",
  "thiserror 2.0.20",
@@ -5260,6 +5261,18 @@ name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
+
+[[package]]
+name = "slider"
+version = "0.1.0"
+dependencies = [
+ "gpui-ce",
+ "palette",
+ "smallvec",
+ "tesserae_base",
+ "tesserae_theme",
+ "tesserae_utils",
+]
 
 [[package]]
 name = "slotmap"

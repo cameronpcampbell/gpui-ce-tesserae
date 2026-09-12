@@ -75,7 +75,7 @@ impl RenderOnce for Switch {
         let checked = self.checked;
         let disabled = self.disabled;
 
-        let thumb_height = theme.size_lg.to_pixels(window.rem_size());
+        let thumb_height = theme.size_3xl.to_pixels(window.rem_size());
         let thumb_width = thumb_height * theme.thumb_ratio.as_f32();
         let padding = theme.padding_sm.to_pixels(window.rem_size());
 
@@ -86,10 +86,10 @@ impl RenderOnce for Switch {
             .checked(checked)
             .disabled(disabled)
             .drag_threshold(self.drag_threshold)
-            .cursor_pointer()
-            .w(width)
-            .h(height)
+            .min_w(width)
+            .min_h(height)
             .p(padding)
+            .cursor_pointer()
             .rounded_full()
             .rounded_smoothing_1()
             .bg(theme.bg_secondary)
