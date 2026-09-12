@@ -4,7 +4,7 @@ use crate::StylesEnum;
 
 pub trait StyledElement: Styled + Sized {
     fn refine_styles_with_enum<'a, Style: StylesEnum>(
-        mut self,
+        self,
         styles: Style,
         data: Style::Data<'a>,
     ) -> Self {
@@ -12,9 +12,7 @@ pub trait StyledElement: Styled + Sized {
         let refinement =
             StylesEnum::refine(&styles, StyleRefinement::default(), data);
 
-        self.style().refine(&refinement);
-
-        self.class(class_name)
+        self.class(class_name).refine_style(&refinement)
     }
 
     fn refine_style(mut self, refinement: &StyleRefinement) -> Self {
