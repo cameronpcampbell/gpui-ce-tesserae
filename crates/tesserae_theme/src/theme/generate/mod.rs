@@ -1,6 +1,6 @@
-use build_setters_macro::BuildSetters;
 use gpui::{DefiniteLength, Relative, Rems, phi, rems};
 use palette::{IntoColor, Mix, Oklab, Oklaba};
+use tesserae_macros::BuildSetters;
 
 use crate::{Theme, ThemeSetKind, color_from_hex};
 

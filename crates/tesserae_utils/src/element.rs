@@ -1,16 +1,27 @@
 use gpui::{Refineable, StyleRefinement, Styled};
 
-use crate::Kind;
+use crate::StylesEnum;
 
 pub trait StyledElement: Styled + Sized {
-    fn apply_kind<'a, K: Kind<Self>>(self, kind: K, data: K::Data<'a>) -> Self {
-        kind.apply(self, data)
+    fn refine_styles_with_enum<'a, Style: StylesEnum>(
+        mut self,
+        styles: Style,
+        data: Style::Data<'a>,
+    ) -> Self {
+        let class_name = StylesEnum::class_name(&styles);
+        let refinement =
+            StylesEnum::refine(&styles, StyleRefinement::default(), data);
+
+        self.style().refine(&refinement);
+
+        self.class(class_name)
     }
 
     fn refine_style(mut self, refinement: &StyleRefinement) -> Self {
         self.style().refine(refinement);
+
         self
     }
 }
 
-impl<E: Styled> StyledElement for E {}
+impl<Element: Styled> StyledElement for Element {}

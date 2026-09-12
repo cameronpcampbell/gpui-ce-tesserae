@@ -10,15 +10,15 @@ use gpui::{
 };
 use palette::{Oklaba, WithAlpha};
 use tesserae_base::button::BaseButton;
-use tesserae_utils::{
-    PerceptualColor, StyledElement, WindowUtils, kinds, use_focus_handle,
-};
-
+use tesserae_macros::Styles;
 use tesserae_theme::{Theme, ThemeFgKind};
+use tesserae_utils::{
+    PerceptualColor, StyledElement, WindowUtils, use_focus_handle,
+};
 
 #[derive(IntoElement)]
 pub struct Button {
-    id: ElementId,
+    element_id: ElementId,
     size: ButtonSizeKind,
     variant: ButtonVariantKind,
     disabled: bool,
@@ -30,9 +30,9 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
         Self {
-            id: id.into(),
+            element_id: element_id.into(),
             size: ButtonSizeKind::default(),
             variant: ButtonVariantKind::default(),
             disabled: false,
@@ -46,43 +46,45 @@ impl Button {
 
     pub fn size(mut self, kind: ButtonSizeKind) -> Self {
         self.size = kind;
+
         self
     }
 
-    pub fn xs(self) -> Self {
-        self.size(ButtonSizeKind::Xs)
+    pub fn extra_small(self) -> Self {
+        self.size(ButtonSizeKind::ExtraSmall)
     }
 
-    pub fn xs_icon(self) -> Self {
-        self.size(ButtonSizeKind::XsIcon)
+    pub fn extra_small_icon(self) -> Self {
+        self.size(ButtonSizeKind::ExtraSmallIcon)
     }
 
-    pub fn sm(self) -> Self {
-        self.size(ButtonSizeKind::Sm)
+    pub fn small(self) -> Self {
+        self.size(ButtonSizeKind::Small)
     }
 
-    pub fn sm_icon(self) -> Self {
-        self.size(ButtonSizeKind::SmIcon)
+    pub fn small_icon(self) -> Self {
+        self.size(ButtonSizeKind::SmallIcon)
     }
 
-    pub fn md(self) -> Self {
-        self.size(ButtonSizeKind::Md)
+    pub fn medium(self) -> Self {
+        self.size(ButtonSizeKind::Medium)
     }
 
-    pub fn md_icon(self) -> Self {
-        self.size(ButtonSizeKind::MdIcon)
+    pub fn medium_icon(self) -> Self {
+        self.size(ButtonSizeKind::MediumIcon)
     }
 
-    pub fn lg(self) -> Self {
-        self.size(ButtonSizeKind::Lg)
+    pub fn large(self) -> Self {
+        self.size(ButtonSizeKind::Large)
     }
 
-    pub fn lg_icon(self) -> Self {
-        self.size(ButtonSizeKind::LgIcon)
+    pub fn large_icon(self) -> Self {
+        self.size(ButtonSizeKind::LargeIcon)
     }
 
     pub fn variant(mut self, kind: ButtonVariantKind) -> Self {
         self.variant = kind;
+
         self
     }
 
@@ -100,16 +102,19 @@ impl Button {
 
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+
         self
     }
 
     pub fn focusable_when_disabled(mut self, focusable: bool) -> Self {
         self.focusable_when_disabled = focusable;
+
         self
     }
 
     pub fn aria_label(mut self, label: impl Into<SharedString>) -> Self {
         self.aria_label = Some(label.into());
+
         self
     }
 
@@ -118,6 +123,7 @@ impl Button {
         handler: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_click = Some(Rc::new(handler));
+
         self
     }
 }
@@ -128,11 +134,14 @@ impl RenderOnce for Button {
         window: &mut gpui::Window,
         cx: &mut gpui::App,
     ) -> impl gpui::IntoElement {
-        let focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
+        let focus_handle =
+            use_focus_handle(self.element_id.clone(), window, cx, None);
         let theme = Theme::read_global(cx);
-        let disabled = self.disabled;
 
-        BaseButton::new(self.id.clone())
+        let disabled = self.disabled;
+        let variant_background = self.variant.background(theme);
+
+        BaseButton::new(self.element_id.clone())
             .disabled(disabled)
             .focusable_when_disabled(self.focusable_when_disabled)
             .when_some(self.aria_label, |this, label| this.aria_label(label))
@@ -148,8 +157,16 @@ impl RenderOnce for Button {
             .line_height(theme.line_height)
             .font_family("Geist")
             .font_weight(FontWeight::MEDIUM)
-            .apply_kind(self.size, (window, theme))
-            .apply_kind(self.variant, (theme, disabled))
+            .refine_styles_with_enum(self.size, (window, theme))
+            .refine_styles_with_enum(self.variant, theme)
+            .when(!disabled, |this| {
+                this.hover(|styles| {
+                    styles.bg(theme.hover_feedback(variant_background))
+                })
+                .active(|styles| {
+                    styles.bg(theme.active_feedback(variant_background))
+                })
+            })
             .transitions(|transitions| {
                 transitions.bg(millis(200).with_easing(ease_in_out))
             })
@@ -158,7 +175,10 @@ impl RenderOnce for Button {
                 |this| this.cursor_pointer(),
                 |this| this.cursor_not_allowed().opacity(0.48),
             )
-            .child(FocusRing::new((self.id, "focus_ring"), focus_handle))
+            .child(FocusRing::new(
+                (self.element_id, "focus_ring"),
+                focus_handle,
+            ))
             .children(self.children)
             .refine_style(&self.style)
     }
@@ -176,8 +196,8 @@ impl Styled for Button {
     }
 }
 
-fn size_kind<E: Styled>(
-    this: E,
+fn size_styles(
+    refinement: StyleRefinement,
     window: &Window,
     theme: &Theme,
     height: Rems,
@@ -185,8 +205,9 @@ fn size_kind<E: Styled>(
     icon_size: Rems,
     radius: Rems,
     spacing: Rems,
-) -> E {
-    this.rounded(radius)
+) -> StyleRefinement {
+    refinement
+        .rounded(radius)
         .gap(spacing)
         .px(spacing)
         .py(window.padding_for_height(height, text_size, theme.line_height))
@@ -194,25 +215,28 @@ fn size_kind<E: Styled>(
         .select_children(class("icon"), |refinement| refinement.size(icon_size))
 }
 
-fn icon_size_kind<E: Styled>(
-    this: E,
+fn icon_size_styles(
+    refinement: StyleRefinement,
     theme: &Theme,
     size: Rems,
     text_size: Rems,
     icon_size: Rems,
     radius: Rems,
-) -> E {
-    this.rounded(radius)
+) -> StyleRefinement {
+    refinement
+        .rounded(radius)
         .size(size)
         .line_height(theme.line_height)
         .text_size(text_size)
         .select_children(class("icon"), |refinement| refinement.size(icon_size))
 }
 
-kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
-    Xs (this, (window, theme)) => {
-        size_kind(
-            this,
+#[derive(Clone, Copy, Default, Styles)]
+#[styles_data(&Window, &Theme)]
+pub enum ButtonSizeKind {
+    #[styles(|refinement, (window, theme)| {
+        size_styles(
+            refinement,
             window,
             theme,
             theme.size_3xl,
@@ -221,22 +245,24 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.radii_md,
             theme.padding_lg,
         )
-    },
+    })]
+    ExtraSmall,
 
-    XsIcon (this, (_window, theme)) => {
-        icon_size_kind(
-            this,
+    #[styles(|refinement, (_window, theme)| {
+        icon_size_styles(
+            refinement,
             theme,
             theme.size_3xl,
             theme.text_size_xs,
             theme.size_xs,
             theme.radii_md,
         )
-    },
+    })]
+    ExtraSmallIcon,
 
-    Sm (this, (window, theme)) => {
-        size_kind(
-            this,
+    #[styles(|refinement, (window, theme)| {
+        size_styles(
+            refinement,
             window,
             theme,
             theme.size_4xl,
@@ -245,23 +271,25 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.radii_md,
             theme.padding_xl,
         )
-    },
+    })]
+    Small,
 
-    SmIcon (this, (_window, theme)) => {
-        icon_size_kind(
-            this,
+    #[styles(|refinement, (_window, theme)| {
+        icon_size_styles(
+            refinement,
             theme,
             theme.size_4xl,
             theme.text_size_xs,
             theme.size_sm,
             theme.radii_md,
         )
-    },
+    })]
+    SmallIcon,
 
     #[default]
-    Md (this, (window, theme)) => {
-        size_kind(
-            this,
+    #[styles(|refinement, (window, theme)| {
+        size_styles(
+            refinement,
             window,
             theme,
             theme.size_5xl,
@@ -270,22 +298,24 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.radii_lg,
             theme.padding_xl,
         )
-    },
+    })]
+    Medium,
 
-    MdIcon (this, (_window, theme)) => {
-        icon_size_kind(
-            this,
+    #[styles(|refinement, (_window, theme)| {
+        icon_size_styles(
+            refinement,
             theme,
             theme.size_5xl,
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
         )
-    },
+    })]
+    MediumIcon,
 
-    Lg (this, (window, theme)) => {
-        size_kind(
-            this,
+    #[styles(|refinement, (window, theme)| {
+        size_styles(
+            refinement,
             window,
             theme,
             theme.size_6xl,
@@ -294,37 +324,32 @@ kinds!(pub ButtonSizeKind<_, (&Window, &Theme)> {
             theme.radii_lg,
             theme.padding_xl,
         )
-    },
+    })]
+    Large,
 
-    LgIcon (this, (_window, theme)) => {
-        icon_size_kind(
-            this,
+    #[styles(|refinement, (_window, theme)| {
+        icon_size_styles(
+            refinement,
             theme,
             theme.size_6xl,
             theme.text_size_sm,
             theme.size_md,
             theme.radii_lg,
         )
-    },
-});
+    })]
+    LargeIcon,
+}
 
-fn fill_button_variant_kind<E>(
-    this: E,
+fn fill_button_variant_styles(
+    refinement: StyleRefinement,
     theme: &Theme,
     bg_color: Oklaba,
-    disabled: bool,
-) -> E
-where
-    E: Styled + StatefulInteractiveElement + FluentBuilder,
-{
-    let fg_color = theme.fg_for_bg(ThemeFgKind::Primary, bg_color);
+) -> StyleRefinement {
+    let fg_color = theme.foreground_for_background(ThemeFgKind::Primary, bg_color);
 
-    this.bg(bg_color)
+    refinement
+        .bg(bg_color)
         .text_color(fg_color)
-        .when(!disabled, |this| {
-            this.hover(|styles| styles.bg(theme.hover_feedback(bg_color)))
-                .active(|styles| styles.bg(theme.active_feedback(bg_color)))
-        })
         .inset_ring_1()
         .inset_ring_color(linear_gradient(
             180.,
@@ -334,33 +359,48 @@ where
         .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
 }
 
-kinds!(pub ButtonVariantKind<Styled + StatefulInteractiveElement + FluentBuilder, (&Theme, bool)> {
+#[derive(Clone, Copy, Default, Styles)]
+#[styles_data(&Theme)]
+pub enum ButtonVariantKind {
     #[default]
-    Primary (this, (theme, disabled)) => {
-        fill_button_variant_kind(this, theme, theme.accent_primary, disabled)
-    },
+    #[styles(|refinement, theme| {
+        fill_button_variant_styles(
+            refinement,
+            theme,
+            ButtonVariantKind::Primary.background(theme),
+        )
+    })]
+    Primary,
 
-    Secondary (this, (theme, disabled)) => {
-        fill_button_variant_kind(this, theme, theme.accent_secondary, disabled)
-    },
+    #[styles(|refinement, theme| {
+        fill_button_variant_styles(
+            refinement,
+            theme,
+            ButtonVariantKind::Secondary.background(theme),
+        )
+    })]
+    Secondary,
 
-    Outline (this, (theme, disabled)) => {
-        let fg_color =
-            theme.fg_for_bg(ThemeFgKind::Primary, theme.bg_secondary);
+    #[styles(|refinement, theme| {
+        let fg_color = theme
+            .foreground_for_background(ThemeFgKind::Primary, theme.bg_secondary);
 
-        this
+        refinement
             .bg(theme.bg_secondary)
             .inset_ring_1()
             .inset_ring_color(theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5))
             .text_color(fg_color)
-            .when(!disabled, |this| {
-                this.hover(|styles| styles
-                    .bg(theme.hover_feedback(theme.bg_secondary))
-                )
-                .active(|styles| styles
-                    .bg(theme.active_feedback(theme.bg_secondary))
-                )
-            })
             .select_children(class("icon"), |refinement| refinement.text_color(fg_color))
+    })]
+    Outline,
+}
+
+impl ButtonVariantKind {
+    fn background(self, theme: &Theme) -> Oklaba {
+        match self {
+            Self::Primary => theme.accent_primary,
+            Self::Secondary => theme.accent_secondary,
+            Self::Outline => theme.bg_secondary,
+        }
     }
-});
+}

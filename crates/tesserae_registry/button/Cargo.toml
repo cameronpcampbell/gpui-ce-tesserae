@@ -10,6 +10,7 @@ test-support = ["gpui/test-support", "tesserae_base/test-support"]
 focus_ring = { path = "../focus_ring" }
 gpui.workspace = true
 tesserae_base.workspace = true
+tesserae_macros.workspace = true
 tesserae_theme.workspace = true
 tesserae_utils.workspace = true
 palette.workspace = true

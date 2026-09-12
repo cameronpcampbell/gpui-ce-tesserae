@@ -1,22 +1,25 @@
 use gpui::{App, AppContext, Entity, Global};
 
-pub trait EntityWrapper<T> {
-    fn new(inner: Entity<T>) -> Self;
+pub trait EntityWrapper<Value> {
+    fn new(inner: Entity<Value>) -> Self;
 
-    fn entity(&self) -> &Entity<T>;
+    fn entity(&self) -> &Entity<Value>;
 }
 
-pub fn global_set_entity<G: Global + EntityWrapper<T>, T: 'static>(
-    cx: &mut App,
-    value: T,
-) {
-    if cx.has_global::<G>() {
-        let global = cx.global::<G>().entity().clone();
+pub fn global_set_entity<GlobalType, Value>(cx: &mut App, value: Value)
+where
+    GlobalType: Global + EntityWrapper<Value>,
+    Value: 'static,
+{
+    if cx.has_global::<GlobalType>() {
+        let global = cx.global::<GlobalType>().entity().clone();
 
-        global.update(cx, |entity, _cx| *entity = value);
-    } else {
-        let theme_set_state = G::new(cx.new(|_cx| value));
+        global.update(cx, |entity, _app| *entity = value);
 
-        cx.set_global::<G>(theme_set_state);
+        return;
     }
+
+    let global_state = GlobalType::new(cx.new(|_app| value));
+
+    cx.set_global::<GlobalType>(global_state);
 }

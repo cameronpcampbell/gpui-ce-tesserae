@@ -721,17 +721,9 @@ dependencies = [
  "gpui-ce",
  "palette",
  "smallvec",
+ "tesserae_macros",
  "tesserae_theme",
  "tesserae_utils",
-]
-
-[[package]]
-name = "build_setters_macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]
@@ -754,6 +746,7 @@ dependencies = [
  "gpui-ce",
  "palette",
  "tesserae_base",
+ "tesserae_macros",
  "tesserae_theme",
  "tesserae_utils",
 ]
@@ -2968,6 +2961,7 @@ dependencies = [
  "gpui-ce",
  "gpui_ce_elements",
  "palette",
+ "tesserae_macros",
  "tesserae_theme",
  "tesserae_utils",
 ]
@@ -5653,13 +5647,25 @@ name = "tesserae_cli"
 version = "0.1.0"
 
 [[package]]
+name = "tesserae_macros"
+version = "0.1.0"
+dependencies = [
+ "convert_case 0.11.0",
+ "gpui-ce",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+ "tesserae_utils",
+]
+
+[[package]]
 name = "tesserae_theme"
 version = "0.1.0"
 dependencies = [
- "build_setters_macro",
  "derive_more",
  "gpui-ce",
  "palette",
+ "tesserae_macros",
  "tesserae_utils",
 ]
 

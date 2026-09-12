@@ -4,7 +4,7 @@ use gpui::{App, AssetSource, Result, SharedString};
 use rust_embed::RustEmbed;
 use thiserror::Error;
 
-/// Embedded assets bundled with the tesserae crate.
+/// Embedded assets bundled with the Tesserae crate.
 #[derive(RustEmbed)]
 #[folder = "../../assets/"]
 #[include = "fonts/**/*.ttf"]

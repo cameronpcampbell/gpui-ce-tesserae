@@ -3,12 +3,13 @@ use gpui::{
 };
 use palette::Oklaba;
 use smallvec::SmallVec;
+use tesserae_macros::Styles;
 use tesserae_theme::Theme;
-use tesserae_utils::{StyledElement, WindowUtils, kinds};
+use tesserae_utils::{StyledElement, WindowUtils};
 
 #[derive(IntoElement)]
 pub struct Bubble {
-    id: ElementId,
+    element_id: ElementId,
     variant: BubbleVariantKind,
     anchor: BubbleAnchorKind,
     children: SmallVec<[AnyElement; 2]>,
@@ -22,9 +23,9 @@ impl ParentElement for Bubble {
 }
 
 impl Bubble {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
         Self {
-            id: id.into(),
+            element_id: element_id.into(),
             variant: BubbleVariantKind::default(),
             anchor: BubbleAnchorKind::default(),
             children: SmallVec::new(),
@@ -42,7 +43,7 @@ impl RenderOnce for Bubble {
         let theme = Theme::read_global(cx);
 
         div()
-            .id(self.id)
+            .id(self.element_id)
             .rounded_full()
             .rounded_smoothing_1()
             .border_1()
@@ -61,8 +62,8 @@ impl RenderOnce for Bubble {
             .font_family("Geist")
             .font_weight(FontWeight::NORMAL)
             .children(self.children)
-            .apply_kind(self.variant, theme)
-            .apply_kind(self.anchor, theme)
+            .refine_styles_with_enum(self.variant, theme)
+            .refine_styles_with_enum(self.anchor, theme)
             .refine_style(&self.style)
     }
 }
@@ -73,76 +74,99 @@ impl Styled for Bubble {
     }
 }
 
-fn variant_kind<E: Styled>(this: E, bg: Oklaba, ring_color: Oklaba) -> E {
-    this.bg(bg).border_color(ring_color)
+fn variant_styles(
+    refinement: StyleRefinement,
+    background: Oklaba,
+    ring_color: Oklaba,
+) -> StyleRefinement {
+    refinement.bg(background).border_color(ring_color)
 }
 
-kinds!(pub BubbleVariantKind<_, &Theme> {
-    Primary (this, theme) => {
-        variant_kind(
-            this,
+#[derive(Clone, Copy, Default, Styles)]
+#[styles_data(&Theme)]
+pub enum BubbleVariantKind {
+    #[styles(|refinement, theme| {
+        variant_styles(
+            refinement,
             theme.bg_primary,
             theme.bg_secondary
         )
-    },
+    })]
+    Primary,
 
     #[default]
-    Secondary (this, theme) => {
-        variant_kind(
-            this,
+    #[styles(|refinement, theme| {
+        variant_styles(
+            refinement,
             theme.bg_secondary,
             theme.bg_tertiary
         )
-    },
+    })]
+    Secondary,
 
-    Tertiary (this, theme) => {
-        variant_kind(
-            this,
+    #[styles(|refinement, theme| {
+        variant_styles(
+            refinement,
             theme.bg_tertiary,
             theme.bg_quaternary,
         )
-    },
+    })]
+    Tertiary,
 
-    Quaternary (this, theme) => {
-        variant_kind(
-            this,
+    #[styles(|refinement, theme| {
+        variant_styles(
+            refinement,
             theme.bg_quaternary,
             theme.bg_quinary,
         )
-    },
+    })]
+    Quaternary,
 
-    Quinary (this, theme) => {
-        variant_kind(
-            this,
+    #[styles(|refinement, theme| {
+        variant_styles(
+            refinement,
             theme.bg_quinary,
             theme.bg_senary,
         )
-    },
-});
+    })]
+    Quinary,
+}
 
-kinds!(pub BubbleAnchorKind<_, &Theme> {
-    TopLeft (this, theme) => {
-        this.rounded_tl(theme.radii_md)
-    },
+#[derive(Clone, Copy, Default, Styles)]
+#[styles_data(&Theme)]
+pub enum BubbleAnchorKind {
+    #[styles(|refinement, theme| {
+        refinement.rounded_tl(theme.radii_md)
+    })]
+    TopLeft,
 
-    CenterLeft (this, theme) => {
-        this.rounded_tl(theme.radii_md).rounded_bl(theme.radii_md)
-    },
+    #[styles(|refinement, theme| {
+        refinement
+            .rounded_tl(theme.radii_md)
+            .rounded_bl(theme.radii_md)
+    })]
+    CenterLeft,
 
-    BottomLeft (this, theme) => {
-        this.rounded_bl(theme.radii_md)
-    },
+    #[styles(|refinement, theme| {
+        refinement.rounded_bl(theme.radii_md)
+    })]
+    BottomLeft,
 
-    TopRight (this, theme) => {
-        this.rounded_tr(theme.radii_md)
-    },
+    #[styles(|refinement, theme| {
+        refinement.rounded_tr(theme.radii_md)
+    })]
+    TopRight,
 
-    CenterRight (this, theme) => {
-        this.rounded_tr(theme.radii_md).rounded_br(theme.radii_md)
-    },
+    #[styles(|refinement, theme| {
+        refinement
+            .rounded_tr(theme.radii_md)
+            .rounded_br(theme.radii_md)
+    })]
+    CenterRight,
 
     #[default]
-    BottomRight (this, theme) => {
-        this.rounded_br(theme.radii_md)
-    },
-});
+    #[styles(|refinement, theme| {
+        refinement.rounded_br(theme.radii_md)
+    })]
+    BottomRight,
+}

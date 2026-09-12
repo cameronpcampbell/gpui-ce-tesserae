@@ -3,11 +3,12 @@ use palette::{
     WithAlpha, color_difference::EuclideanDistance, convert::FromColorUnclamped,
 };
 
-// WCAG 2.1 flare offset, which keeps contrast finite near black.
+// The WCAG 2.1 flare offset keeps contrast finite near black.
 const FLARE_LUMINANCE: f32 = 0.05;
 
-// Parameters from P. Whittle, "Brightness, discriminability and the 'crispening
-// effect'," Vision Research 32.8 (1992), doi:10.1016/0042-6989(92)90205-W.
+// These parameters come from P. Whittle, "Brightness, discriminability and the
+// 'crispening effect'," Vision Research 32.8 (1992),
+// doi:10.1016/0042-6989(92)90205-W.
 const CONTRAST_GAIN: f32 = 6.58;
 const DECREMENT_GAIN: f32 = 7.07 / 8.22;
 const DISPLAY_TOLERANCE: f32 = 1e-7;
@@ -60,6 +61,7 @@ fn gpui_displayed_color(color: Oklaba) -> Oklaba {
     // GPUI converts solid fills through HSL before displaying them.
     let hsl: Hsla = color.into_color();
     let rgb: Srgba = hsl.into_color();
+
     rgb.into_color()
 }
 
@@ -82,6 +84,7 @@ fn compensated_mix(
     let progress = progress.clamp(0.0, 1.0);
     let direct = base.mix(endpoint, progress);
     let rgb: LinSrgba = LinSrgba::from_color_unclamped(direct);
+
     if rgb.is_within_bounds() {
         return direct;
     }
@@ -89,6 +92,7 @@ fn compensated_mix(
     let first: Oklaba = rgb.clamp().into_color();
     let first_measured = measure(gpui_displayed_color(first));
     let first_error = (first_measured - target).abs();
+
     if first_error <= tolerance || first_measured <= 0.0 {
         return first;
     }
@@ -105,12 +109,14 @@ fn compensated_mix(
 
 fn set_displayed_lightness(color: Oklaba, target: f32) -> Oklaba {
     let base = gpui_displayed_color(color);
+
     if target == 0.0 || target == 1.0 {
         return neutral_color(target, base.alpha);
     }
 
     let lightness_delta = target - base.color.l;
     let target_delta = lightness_delta.abs();
+
     if target_delta <= DISPLAY_TOLERANCE {
         return base;
     }
@@ -131,10 +137,13 @@ fn set_displayed_lightness(color: Oklaba, target: f32) -> Oklaba {
 
 /// Perceptual controls that adjust colors in OKLab and return the input type.
 pub trait PerceptualColor: Sized {
-    /// Returns the candidate with the greatest perceptual contrast against this color.
-    fn best_contrast<C, const N: usize>(self, candidates: [C; N]) -> C
+    /// Returns the candidate with the greatest contrast against this color.
+    fn best_contrast<Color, const COUNT: usize>(
+        self,
+        candidates: [Color; COUNT],
+    ) -> Color
     where
-        C: Clone + IntoColor<Oklaba>;
+        Color: Clone + IntoColor<Oklaba>;
 
     /// Sets opacity with compensation based on the displayed color's lightness and chroma.
     fn perceptual_alpha(self, desired_alpha: f32) -> Self;
@@ -146,13 +155,19 @@ pub trait PerceptualColor: Sized {
     fn perceptual_feedback(self, amount: f32) -> Self;
 }
 
-impl<C> PerceptualColor for C
+impl<Color> PerceptualColor for Color
 where
-    C: Clone + IntoColor<Oklaba> + FromColor<Oklaba> + WithAlpha<f32, WithAlpha = C>,
+    Color: Clone
+        + IntoColor<Oklaba>
+        + FromColor<Oklaba>
+        + WithAlpha<f32, WithAlpha = Color>,
 {
-    fn best_contrast<T, const N: usize>(self, candidates: [T; N]) -> T
+    fn best_contrast<Candidate, const COUNT: usize>(
+        self,
+        candidates: [Candidate; COUNT],
+    ) -> Candidate
     where
-        T: Clone + IntoColor<Oklaba>,
+        Candidate: Clone + IntoColor<Oklaba>,
     {
         let base: Oklaba = self.into_color();
         let mut candidates = candidates.into_iter();
@@ -160,15 +175,18 @@ where
             .next()
             .expect("best_contrast requires at least one candidate");
 
-        let contrast = |candidate: &T| {
+        let contrast = |candidate: &Candidate| {
             let candidate: Oklaba = candidate.clone().into_color();
+
             perceived_contrast(candidate.color.l, base.color.l).abs()
         };
+
         let first_contrast = contrast(&first);
 
         candidates
             .fold((first, first_contrast), |best, candidate| {
                 let candidate_contrast = contrast(&candidate);
+
                 if candidate_contrast > best.1 {
                     (candidate, candidate_contrast)
                 } else {
@@ -180,6 +198,7 @@ where
 
     fn perceptual_alpha(self, desired_alpha: f32) -> Self {
         let alpha = desired_alpha.clamp(0.0, 1.0);
+
         if alpha == 0.0 || alpha == 1.0 {
             return self.with_alpha(alpha);
         }
@@ -207,6 +226,7 @@ where
             neutral_color(if amount > 0.0 { 1.0 } else { 0.0 }, base.alpha);
         let target = amount.abs().min(1.0);
         let available = base.color.distance(endpoint.color);
+
         if target >= available {
             return endpoint.into_color();
         }
@@ -225,12 +245,12 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use gpui::Background;
     use palette::{
         IsWithinBounds, LinSrgb, Oklaba, Srgba, color_difference::EuclideanDistance,
     };
-
-    use super::*;
 
     const BLACK: Oklaba = Oklaba::new(0.0, 0.0, 0.0, 1.0);
     const WHITE: Oklaba = Oklaba::new(1.0, 0.0, 0.0, 1.0);
@@ -254,10 +274,10 @@ mod tests {
 
     #[test]
     fn alpha_replaces_opacity_and_preserves_color_across_representations() {
-        fn check_alpha<C>(original: C, desired: f32) -> f32
+        fn check_alpha<Color>(original: Color, desired: f32) -> f32
         where
-            C: Copy + PerceptualColor + WithAlpha<f32, WithAlpha = C>,
-            C::Color: std::fmt::Debug + PartialEq,
+            Color: Copy + PerceptualColor + WithAlpha<f32, WithAlpha = Color>,
+            Color::Color: std::fmt::Debug + PartialEq,
         {
             let expected = original.perceptual_alpha(desired).split();
             assert_eq!(expected.0, original.without_alpha());
@@ -270,12 +290,14 @@ mod tests {
                     expected,
                 );
             }
+
             expected.1
         }
 
         for sample in color_samples() {
             let hsl = Background::from(sample).as_solid().unwrap();
             let srgb: Srgba = hsl.into_color();
+
             for desired in [-2.0, 0.0, 1e-6, 0.08, 0.2, 0.5, 0.9, 1.0, 2.0] {
                 let alpha = check_alpha(sample, desired);
                 assert_close_within(check_alpha(srgb, desired), alpha, 1e-5);
@@ -324,6 +346,7 @@ mod tests {
                 assert!(previous_alpha - alpha < 0.01);
                 previous_alpha = alpha;
             }
+
             assert_close(previous_alpha, desired);
 
             let neutral = gray(0.5).perceptual_alpha(desired);
@@ -367,6 +390,7 @@ mod tests {
     fn best_contrast_returns_the_farthest_candidate_and_keeps_its_type() {
         assert_eq!(gray(0.2).best_contrast([gray(0.1), WHITE]), WHITE);
         assert_eq!(gray(0.8).best_contrast([BLACK, gray(0.9)]), BLACK);
+
         let first = Srgba::new(0.8, 0.4, 0.2, 0.3);
         let second = Srgba::new(0.8, 0.4, 0.2, 0.9);
         assert_eq!(BLACK.best_contrast([first, second]), first);
@@ -375,25 +399,30 @@ mod tests {
     #[test]
     #[should_panic(expected = "best_contrast requires at least one candidate")]
     fn best_contrast_rejects_an_empty_candidate_array() {
-        let _: Oklaba = BLACK.best_contrast([]);
+        let _color: Oklaba = BLACK.best_contrast([]);
     }
 
     fn srgb_samples() -> impl Iterator<Item = Srgba> {
         let channels = [0.0, 0.25, 0.5, 0.75, 1.0];
+
         // Exercise colors between grid points without a random test dependency.
-        let interior = (0..256).scan(0x5eed_u32, |state, _| {
-            let [red, green, blue] = std::array::from_fn(|_| {
+        let interior = (0..256).scan(0x5eed_u32, |state, _idx| {
+            let [red, green, blue] = std::array::from_fn(|_channel_idx| {
                 *state = state.wrapping_mul(1664525).wrapping_add(1013904223);
+
                 (*state >> 8) as f32 / (1_u32 << 24) as f32
             });
+
             Some(Srgba::new(red, green, blue, 1.0))
         });
+
         let saturated: [Srgba; 4] = [
             Srgba::new(1.0, 0.0, 0.0, 1.0),
             Srgba::new(0.0, 1.0, 0.0, 1.0),
             Srgba::new(0.0, 0.0, 1.0, 1.0),
             Srgba::new(106.0 / 255.0, 65.0 / 255.0, 1.0, 1.0),
         ];
+
         channels
             .into_iter()
             .flat_map(move |red| {
@@ -418,6 +447,7 @@ mod tests {
 
     fn displayed_color(color: impl IntoColor<Hsla>) -> Oklaba {
         let rgb: Srgba = Background::from(color).as_solid().unwrap().into_color();
+
         rgb.into_color()
     }
 
@@ -449,6 +479,7 @@ mod tests {
                 .into_iter()
                 .all(f32::is_finite)
         );
+
         let rgb: LinSrgb = LinSrgb::from_color_unclamped(color.color);
         assert!(
             [rgb.red, rgb.green, rgb.blue]
@@ -491,11 +522,13 @@ mod tests {
                 assert_eq!(adjusted.alpha, color.alpha);
                 assert!(chroma(displayed) <= original_chroma + 1e-5);
                 assert_in_gamut(adjusted);
+
                 if intensity <= 0.0 {
                     assert_eq!(adjusted.color, BLACK.color);
                 } else if intensity >= 1.0 {
                     assert_eq!(adjusted.color, WHITE.color);
                 }
+
                 previous_lightness = lightness;
             }
         }
@@ -533,13 +566,18 @@ mod tests {
     fn feedback_changes_smoothly_in_both_directions_until_the_endpoint() {
         for color in color_samples() {
             assert_eq!(color.perceptual_feedback(0.0), color);
+
             let rest = displayed_color(color);
             let original_chroma = chroma(rest);
+
             for direction in [-1.0, 1.0] {
                 let endpoint = if direction > 0.0 { WHITE } else { BLACK };
+
                 let available = rest.color.distance(displayed_color(endpoint).color);
+
                 let mut previous = rest;
                 let mut previous_amount = 0.0;
+
                 let mut amounts: Vec<_> = [1e-9, 1e-8, 5e-8, 1e-7, 1e-6, 1e-5, 1e-4]
                     .into_iter()
                     .chain((1..=100).map(|step| step as f32 / 100.0))
@@ -564,6 +602,7 @@ mod tests {
                     } else {
                         FEEDBACK_TOLERANCE
                     };
+
                     assert!(
                         (strength - amount.min(available)).abs() < tolerance,
                         "base {color:?}, amount {}: distance {strength}",
@@ -580,12 +619,14 @@ mod tests {
                     );
                     assert_eq!(adjusted.alpha, color.alpha);
                     assert_in_gamut(adjusted);
+
                     if amount >= available {
                         assert!(displayed.color.distance(endpoint.color) < 1e-6);
                     }
 
                     let adjusted_chroma = chroma(displayed);
                     assert!(adjusted_chroma <= original_chroma + 1e-5);
+
                     if original_chroma < 1e-5 {
                         assert!(adjusted_chroma < 1e-5);
                     } else if amount <= 0.08

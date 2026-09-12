@@ -7,22 +7,22 @@ use gpui::{
 };
 use gpui_elements::editable_text::{EditableTextState, text_input};
 use palette::{IntoColor, Oklaba, WithAlpha};
-use tesserae_utils::{PerceptualColor, StyledElement, WindowUtils, kinds};
-
+use tesserae_macros::Styles;
 use tesserae_theme::Theme;
+use tesserae_utils::{PerceptualColor, StyledElement, WindowUtils};
 
 #[derive(IntoElement)]
 pub struct Input {
-    id: ElementId,
+    element_id: ElementId,
     size: InputSizeKind,
     variant: InputVariantKind,
     style: StyleRefinement,
 }
 
 impl Input {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
         Self {
-            id: id.into(),
+            element_id: element_id.into(),
             size: InputSizeKind::default(),
             variant: InputVariantKind::default(),
             style: StyleRefinement::default(),
@@ -31,19 +31,21 @@ impl Input {
 
     pub fn size(mut self, kind: InputSizeKind) -> Self {
         self.size = kind;
+
         self
     }
 
-    pub fn md(self) -> Self {
-        self.size(InputSizeKind::Md)
+    pub fn medium(self) -> Self {
+        self.size(InputSizeKind::Medium)
     }
 
-    pub fn lg(self) -> Self {
-        self.size(InputSizeKind::Lg)
+    pub fn large(self) -> Self {
+        self.size(InputSizeKind::Large)
     }
 
     pub fn variant(mut self, kind: InputVariantKind) -> Self {
         self.variant = kind;
+
         self
     }
 
@@ -70,22 +72,32 @@ impl RenderOnce for Input {
         window: &mut gpui::Window,
         cx: &mut gpui::App,
     ) -> impl gpui::IntoElement {
-        let input_state =
-            EditableTextState::use_keyed((self.id.clone(), "state"), window, cx);
+        let input_state = EditableTextState::use_keyed(
+            (self.element_id.clone(), "state"),
+            window,
+            cx,
+        );
 
         let focus_handle = input_state.focus_handle(cx).tab_stop(true);
 
         let theme = Theme::read_global(cx);
+        let is_focused = focus_handle.is_focused(window);
+        let variant_ring_color = self.variant.colors(theme).1;
 
         div()
-            .id(self.id.clone())
+            .id(self.element_id.clone())
             .rounded_smoothing_1()
             .inset_ring_1()
             .flex()
             .justify_center()
-            .apply_kind(self.size, (window, theme))
-            .apply_kind(self.variant, (theme, focus_handle.is_focused(window)))
-            .when(focus_handle.is_focused(window), |this| {
+            .refine_styles_with_enum(self.size, (window, theme))
+            .refine_styles_with_enum(self.variant, theme)
+            .when(!is_focused, |this| {
+                this.hover(|this| {
+                    this.inset_ring_color(theme.hover_feedback(variant_ring_color))
+                })
+            })
+            .when(is_focused, |this| {
                 let inset_ring_color =
                     theme.accent_primary.perceptual_brightness(0.5);
 
@@ -97,11 +109,11 @@ impl RenderOnce for Input {
                 transitions.inset_ring_color(millis(120).with_easing(ease_in_out))
             })
             .child(FocusRing::new(
-                (self.id.clone(), "focus_ring"),
+                (self.element_id.clone(), "focus_ring"),
                 focus_handle,
             ))
             .child(
-                text_input((self.id, "input"))
+                text_input((self.element_id, "input"))
                     .class("input")
                     .state(input_state.downgrade())
                     .placeholder("Type here...")
@@ -126,8 +138,8 @@ impl Styled for Input {
     }
 }
 
-fn size_kind<E: Styled>(
-    this: E,
+fn size_styles(
+    refinement: StyleRefinement,
     window: &Window,
     theme: &Theme,
     height: Rems,
@@ -135,8 +147,9 @@ fn size_kind<E: Styled>(
     icon_size: Rems,
     radius: Rems,
     spacing: Rems,
-) -> E {
-    this.rounded(radius)
+) -> StyleRefinement {
+    refinement
+        .rounded(radius)
         .gap(spacing)
         .px(spacing)
         .py(window.padding_for_height(height, text_size, theme.line_height))
@@ -147,11 +160,13 @@ fn size_kind<E: Styled>(
         })
 }
 
-kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
+#[derive(Clone, Copy, Default, Styles)]
+#[styles_data(&Window, &Theme)]
+pub enum InputSizeKind {
     #[default]
-    Md (this, (window, theme)) => {
-        size_kind(
-            this,
+    #[styles(|refinement, (window, theme)| {
+        size_styles(
+            refinement,
             window,
             theme,
             theme.size_5xl,
@@ -160,11 +175,12 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
             theme.radii_lg,
             theme.padding_xl,
         )
-    },
+    })]
+    Medium,
 
-    Lg (this, (window, theme)) => {
-        size_kind(
-            this,
+    #[styles(|refinement, (window, theme)| {
+        size_styles(
+            refinement,
             window,
             theme,
             theme.size_6xl,
@@ -173,64 +189,74 @@ kinds!(pub InputSizeKind<_, (&Window, &Theme)> {
             theme.radii_lg,
             theme.padding_xl,
         )
-    },
-});
-
-fn variant_kind<E: Styled + InteractiveElement + FluentBuilder>(
-    this: E,
-    theme: &Theme,
-    is_focused: bool,
-    bg: Oklaba,
-    ring_color: Oklaba,
-) -> E {
-    this.bg(bg)
-        .inset_ring_color(ring_color)
-        .when(!is_focused, |this| {
-            this.hover(|this| {
-                this.inset_ring_color(theme.hover_feedback(ring_color))
-            })
-        })
+    })]
+    Large,
 }
 
-kinds!(pub InputVariantKind<Styled + InteractiveElement + FluentBuilder, (&Theme, bool)> {
-    Primary (this, (theme, is_focused)) => {
-        variant_kind(
-            this,
-            theme,
-            is_focused,
-            theme.bg_primary,
-            theme.bg_secondary.lerp(&theme.bg_tertiary, 0.5),
-        )
-    },
+fn variant_styles(
+    refinement: StyleRefinement,
+    background: Oklaba,
+    ring_color: Oklaba,
+) -> StyleRefinement {
+    refinement.bg(background).inset_ring_color(ring_color)
+}
 
-    Secondary (this, (theme, is_focused)) => {
-        variant_kind(
-            this,
-            theme,
-            is_focused,
-            theme.bg_secondary,
-            theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5),
-        )
-    },
+#[derive(Clone, Copy, Default, Styles)]
+#[styles_data(&Theme)]
+pub enum InputVariantKind {
+    #[styles(|refinement, theme| {
+        let (background, ring_color) =
+            InputVariantKind::Primary.colors(theme);
+
+        variant_styles(refinement, background, ring_color)
+    })]
+    Primary,
+
+    #[styles(|refinement, theme| {
+        let (background, ring_color) =
+            InputVariantKind::Secondary.colors(theme);
+
+        variant_styles(refinement, background, ring_color)
+    })]
+    Secondary,
 
     #[default]
-    Tertiary (this, (theme, is_focused)) => {
-        variant_kind(
-            this,
-            theme,
-            is_focused,
-            theme.bg_tertiary,
-            theme.bg_quaternary.lerp(&theme.bg_quinary, 0.5),
-        )
-    },
+    #[styles(|refinement, theme| {
+        let (background, ring_color) =
+            InputVariantKind::Tertiary.colors(theme);
 
-    Quaternary (this, (theme, is_focused)) => {
-        variant_kind(
-            this,
-            theme,
-            is_focused,
-            theme.bg_quaternary,
-            theme.bg_quinary.lerp(&theme.bg_senary, 0.5),
-        )
-    },
-});
+        variant_styles(refinement, background, ring_color)
+    })]
+    Tertiary,
+
+    #[styles(|refinement, theme| {
+        let (background, ring_color) =
+            InputVariantKind::Quaternary.colors(theme);
+
+        variant_styles(refinement, background, ring_color)
+    })]
+    Quaternary,
+}
+
+impl InputVariantKind {
+    fn colors(self, theme: &Theme) -> (Oklaba, Oklaba) {
+        match self {
+            Self::Primary => (
+                theme.bg_primary,
+                theme.bg_secondary.lerp(&theme.bg_tertiary, 0.5),
+            ),
+            Self::Secondary => (
+                theme.bg_secondary,
+                theme.bg_tertiary.lerp(&theme.bg_quaternary, 0.5),
+            ),
+            Self::Tertiary => (
+                theme.bg_tertiary,
+                theme.bg_quaternary.lerp(&theme.bg_quinary, 0.5),
+            ),
+            Self::Quaternary => (
+                theme.bg_quaternary,
+                theme.bg_quinary.lerp(&theme.bg_senary, 0.5),
+            ),
+        }
+    }
+}

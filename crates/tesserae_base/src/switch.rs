@@ -18,7 +18,7 @@ pub type OnChange = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
 /// selectors.
 #[derive(IntoElement)]
 pub struct BaseSwitch {
-    id: ElementId,
+    element_id: ElementId,
     base: Stateful<Div>,
     style: StyleRefinement,
     checked: bool,
@@ -36,12 +36,12 @@ impl BaseSwitch {
     pub const UNCHECKED_CLASS: &'static str = "unchecked";
     pub const DISABLED_CLASS: &'static str = "disabled";
 
-    pub fn new(id: impl Into<ElementId>) -> Self {
-        let id = id.into();
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
+        let element_id = element_id.into();
 
         Self {
-            id: id.clone(),
-            base: div().id(id),
+            element_id: element_id.clone(),
+            base: div().id(element_id),
             style: StyleRefinement::default(),
             checked: false,
             disabled: false,
@@ -55,18 +55,21 @@ impl BaseSwitch {
     /// Sets the application-controlled checked value.
     pub fn checked(mut self, checked: bool) -> Self {
         self.checked = checked;
+
         self
     }
 
     /// Sets whether the switch ignores user interaction.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+
         self
     }
 
     /// Sets the horizontal distance required to select a value while dragging.
     pub fn drag_threshold(mut self, threshold: Pixels) -> Self {
         self.drag_threshold = threshold;
+
         self
     }
 
@@ -76,12 +79,14 @@ impl BaseSwitch {
         handler: impl Fn(&bool, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_change = Some(Rc::new(handler));
+
         self
     }
 
     /// Sets the name exposed to accessibility clients.
     pub fn aria_label(mut self, label: impl Into<SharedString>) -> Self {
         self.aria_label = Some(label.into());
+
         self
     }
 }
@@ -111,12 +116,13 @@ impl RenderOnce for BaseSwitch {
         let disabled = self.disabled;
         let checked = self.checked;
 
-        let focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
+        let focus_handle =
+            use_focus_handle(self.element_id.clone(), window, cx, None);
 
         let on_change = if disabled { None } else { self.on_change };
 
         let drag = BaseSwitchDrag::new(
-            &self.id,
+            &self.element_id,
             on_change,
             self.drag_threshold,
             window,
@@ -136,7 +142,7 @@ impl RenderOnce for BaseSwitch {
             .when_some(self.aria_label, |this, label| this.aria_label(label))
             .when(!disabled, |this| this.track_focus(&focus_handle))
             .when(disabled, |this| {
-                this.on_mouse_down(MouseButton::Left, |_, _, cx| {
+                this.on_mouse_down(MouseButton::Left, |_event, _window, cx| {
                     cx.stop_propagation();
                 })
             })
@@ -160,9 +166,9 @@ pub struct BaseSwitchThumb {
 impl BaseSwitchThumb {
     pub const CLASS: &'static str = "thumb";
 
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
         Self {
-            base: div().id(id),
+            base: div().id(element_id),
             style: StyleRefinement::default(),
             children: Vec::new(),
         }
@@ -170,7 +176,7 @@ impl BaseSwitchThumb {
 }
 
 impl RenderOnce for BaseSwitchThumb {
-    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+    fn render(self, _window: &mut Window, _app: &mut App) -> impl IntoElement {
         self.base
             .class(Self::CLASS)
             .aria_hidden(true)
@@ -207,14 +213,14 @@ struct BaseSwitchDrag {
 
 impl BaseSwitchDrag {
     fn new(
-        id: &ElementId,
+        element_id: &ElementId,
         on_change: Option<OnChange>,
         threshold: Pixels,
         window: &mut Window,
         cx: &mut App,
     ) -> Self {
         let state = window.use_keyed_state(
-            (id.clone(), "state:drag"),
+            (element_id.clone(), "state:drag"),
             cx,
             |_window, _cx| DragState::default(),
         );
@@ -235,15 +241,17 @@ impl BaseSwitchDrag {
     fn effective_checked(&self, checked: bool, cx: &App) -> bool {
         self.on_change
             .as_ref()
-            .and_then(|_| self.state.read(cx).dragged_to)
+            .and_then(|_handler| self.state.read(cx).dragged_to)
             .unwrap_or(checked)
     }
 
     fn cancel(&self, cx: &mut App) {
-        if self.state.read(cx).start_x.is_some() {
-            self.state
-                .update(cx, |state, _cx| *state = DragState::default());
+        if self.state.read(cx).start_x.is_none() {
+            return;
         }
+
+        self.state
+            .update(cx, |state, _cx| *state = DragState::default());
     }
 
     fn install(self, base: Stateful<Div>, checked: bool) -> Stateful<Div> {
@@ -259,13 +267,15 @@ impl BaseSwitchDrag {
 
         base.child(Self::track_mouse_x(drag_state_on_move, threshold))
             .on_mouse_down_all(move |event, phase, hitbox, window, cx| {
-                if phase == DispatchPhase::Bubble
-                    && event.button == MouseButton::Left
-                    && hitbox.is_hovered(window)
+                if phase != DispatchPhase::Bubble
+                    || event.button != MouseButton::Left
+                    || !hitbox.is_hovered(window)
                 {
-                    drag_state_on_down
-                        .update(cx, |state, _cx| state.start(event.position.x));
+                    return;
                 }
+
+                drag_state_on_down
+                    .update(cx, |state, _cx| state.start(event.position.x));
             })
             .on_mouse_up_all(move |event, phase, hitbox, window, cx| {
                 if phase != DispatchPhase::Capture
@@ -284,6 +294,7 @@ impl BaseSwitchDrag {
                         threshold,
                     );
                     cx.notify();
+
                     next
                 });
 
@@ -292,9 +303,11 @@ impl BaseSwitchDrag {
                 }
             })
             .on_click(move |event, window, cx| {
-                if !matches!(event, ClickEvent::Mouse(_)) {
-                    on_change(&!checked, window, cx);
+                if matches!(event, ClickEvent::Mouse(_mouse_event)) {
+                    return;
                 }
+
+                on_change(&!checked, window, cx);
             })
     }
 
@@ -303,8 +316,8 @@ impl BaseSwitchDrag {
         threshold: Pixels,
     ) -> impl IntoElement {
         canvas(
-            |_, _, _| (),
-            move |_, _, window, _| {
+            |_bounds, _window, _app| (),
+            move |_bounds, _prepaint, window, _app| {
                 window.on_mouse_event(
                     move |event: &MouseMoveEvent, phase, _window, cx| {
                         if phase != DispatchPhase::Capture || !event.dragging() {
@@ -312,9 +325,11 @@ impl BaseSwitchDrag {
                         }
 
                         state.update(cx, |state, cx| {
-                            if state.update(event.position.x, threshold) {
-                                cx.notify();
+                            if !state.update(event.position.x, threshold) {
+                                return;
                             }
+
+                            cx.notify();
                         });
                     },
                 );
@@ -365,18 +380,21 @@ impl DragState {
 
         let next = match self.dragged_to {
             Some(next) if next != checked => Some(next),
-            Some(_) => None,
+            Some(_dragged_to) => None,
             None if released_inside => Some(!checked),
             None => None,
         };
 
         *self = Self::default();
+
         next
     }
 }
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
+    use super::{BaseSwitch, BaseSwitchThumb};
+
     use std::sync::{Arc, Mutex};
 
     use gpui::{
@@ -386,8 +404,6 @@ mod tests {
         Styled, TestAppContext, VisualTestContext, Window, accesskit, canvas, div,
         point, prelude::FluentBuilder, px, selectors::class,
     };
-
-    use super::{BaseSwitch, BaseSwitchThumb};
 
     const SWITCH: &str = "base-switch";
     const THUMB: &str = "base-switch-thumb";
@@ -412,7 +428,11 @@ mod tests {
                 .id("switch-parent")
                 .tab_group()
                 .size_full()
-                .on_click(cx.listener(|this, _, _, _| this.parent_clicks += 1))
+                .on_click(
+                    cx.listener(|this, _event, _window, _app| {
+                        this.parent_clicks += 1
+                    }),
+                )
                 .child(
                     BaseSwitch::new("switch-under-test")
                         .checked(self.checked)
@@ -446,9 +466,11 @@ mod tests {
                             this.on_change(cx.listener(
                                 |this, checked, _window, cx| {
                                     this.changes.push(*checked);
+
                                     if this.accept_changes {
                                         this.checked = *checked;
                                     }
+
                                     cx.notify();
                                 },
                             ))
@@ -495,6 +517,7 @@ mod tests {
             is_held: false,
             prefer_character_input: false,
         });
+
         cx.simulate_event(KeyUpEvent { keystroke });
     }
 
@@ -564,6 +587,7 @@ mod tests {
             view.drag_threshold = px(40.);
             cx.notify();
         });
+
         let below_custom_threshold = point(inside.x + px(20.), inside.y);
         let beyond_custom_threshold = point(inside.x + px(41.), inside.y);
         cx.simulate_mouse_down(inside, MouseButton::Left, Modifiers::none());
@@ -631,6 +655,7 @@ mod tests {
             view.disabled = false;
             cx.notify();
         });
+
         cx.simulate_mouse_down(inside, MouseButton::Left, Modifiers::none());
         cx.simulate_mouse_move(outside_right, MouseButton::Left, Modifiers::none());
         assert_eq!(bounds(cx, SWITCH).size.width, px(120.));
@@ -639,6 +664,7 @@ mod tests {
             view.disabled = true;
             cx.notify();
         });
+
         assert_eq!(bounds(cx, SWITCH).size.width, px(100.));
         cx.simulate_mouse_up(outside_right, MouseButton::Left, Modifiers::none());
 
@@ -649,6 +675,7 @@ mod tests {
             view.disabled = false;
             cx.notify();
         });
+
         cx.simulate_mouse_down(inside, MouseButton::Left, Modifiers::none());
         cx.simulate_mouse_move(outside_right, MouseButton::Left, Modifiers::none());
         assert_eq!(bounds(cx, SWITCH).size.width, px(120.));
@@ -657,6 +684,7 @@ mod tests {
             view.has_handler = false;
             cx.notify();
         });
+
         assert_eq!(bounds(cx, SWITCH).size.width, px(100.));
         cx.simulate_mouse_up(outside_right, MouseButton::Left, Modifiers::none());
         cx.simulate_click(inside, Modifiers::none());
@@ -669,6 +697,7 @@ mod tests {
             view.has_handler = true;
             cx.notify();
         });
+
         cx.simulate_click(inside, Modifiers::none());
         assert!(state(&view, cx).0);
         assert_eq!(state(&view, cx).1, vec![true]);
@@ -689,8 +718,9 @@ mod tests {
                 _cx: &mut Context<Self>,
             ) -> impl IntoElement {
                 let captured = self.captured.clone();
+
                 canvas(
-                    move |_, window, cx| {
+                    move |_bounds, window, cx| {
                         let mut info = |switch: BaseSwitch| {
                             let mut node =
                                 accesskit::Node::new(accesskit::Role::Switch);
@@ -698,6 +728,7 @@ mod tests {
                                 .render(window, cx)
                                 .into_element()
                                 .write_a11y_info(&mut node);
+
                             node
                         };
 
@@ -705,26 +736,28 @@ mod tests {
                             BaseSwitch::new("enabled")
                                 .checked(true)
                                 .aria_label("Notifications")
-                                .on_change(|_, _, _| {}),
+                                .on_change(|_checked, _window, _app| {}),
                         );
                         let disabled = info(
                             BaseSwitch::new("disabled")
                                 .disabled(true)
                                 .aria_label("Notifications")
-                                .on_change(|_, _, _| {}),
+                                .on_change(|_checked, _window, _app| {}),
                         );
                         *captured.lock().unwrap() = Some((enabled, disabled));
                     },
-                    |_, _, _, _| {},
+                    |_bounds, _prepaint, _window, _app| {},
                 )
             }
         }
 
         let captured: Captured = Arc::new(Mutex::new(None));
         let result = captured.clone();
-        let (_, cx) =
-            cx.add_window_view(move |_, _| AccessibilityProbe { captured });
+        let (_view, cx) =
+            cx.add_window_view(move |_window, _app| AccessibilityProbe { captured });
+
         cx.update(|window, cx| window.draw(cx).clear(cx));
+
         let (enabled, disabled) = result.lock().unwrap().take().unwrap();
 
         assert_eq!(enabled.role(), accesskit::Role::Switch);

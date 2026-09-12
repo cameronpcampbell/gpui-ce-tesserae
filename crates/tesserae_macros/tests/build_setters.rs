@@ -1,4 +1,4 @@
-use build_setters_macro::BuildSetters;
+use tesserae_macros::BuildSetters;
 
 #[derive(BuildSetters)]
 struct Foo {

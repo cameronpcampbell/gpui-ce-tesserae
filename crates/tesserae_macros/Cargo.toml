@@ -1,5 +1,5 @@
 [package]
-name = "build_setters_macro"
+name = "tesserae_macros"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,6 +7,11 @@ edition = "2024"
 proc-macro = true
 
 [dependencies]
+convert_case.workspace = true
 proc-macro2.workspace = true
 quote.workspace = true
 syn.workspace = true
+
+[dev-dependencies]
+gpui.workspace = true
+tesserae_utils.workspace = true

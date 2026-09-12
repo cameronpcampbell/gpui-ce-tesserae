@@ -13,7 +13,7 @@ use tesserae_utils::{PerceptualColor, StyledElement};
 
 #[derive(IntoElement)]
 pub struct Switch {
-    id: ElementId,
+    element_id: ElementId,
     checked: bool,
     disabled: bool,
     drag_threshold: Pixels,
@@ -23,9 +23,9 @@ pub struct Switch {
 }
 
 impl Switch {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
         Self {
-            id: id.into(),
+            element_id: element_id.into(),
             checked: false,
             disabled: false,
             drag_threshold: BaseSwitch::DRAG_THRESHOLD,
@@ -37,21 +37,25 @@ impl Switch {
 
     pub fn checked(mut self, checked: bool) -> Self {
         self.checked = checked;
+
         self
     }
 
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+
         self
     }
 
     pub fn drag_threshold(mut self, threshold: Pixels) -> Self {
         self.drag_threshold = threshold;
+
         self
     }
 
     pub fn aria_label(mut self, label: impl Into<SharedString>) -> Self {
         self.aria_label = Some(label.into());
+
         self
     }
 
@@ -60,6 +64,7 @@ impl Switch {
         on_change: impl Fn(&bool, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_change = Some(Rc::new(on_change));
+
         self
     }
 }
@@ -77,7 +82,7 @@ impl RenderOnce for Switch {
         let width = padding * 2 + thumb_width + thumb_height;
         let height = thumb_height + padding * 2;
 
-        BaseSwitch::new(self.id.clone())
+        BaseSwitch::new(self.element_id.clone())
             .checked(checked)
             .disabled(disabled)
             .drag_threshold(self.drag_threshold)
@@ -128,7 +133,7 @@ impl RenderOnce for Switch {
             })
             .child(
                 div()
-                    .id((self.id.clone(), "overlay"))
+                    .id((self.element_id.clone(), "overlay"))
                     .class("overlay")
                     .absolute()
                     .inset_0()
@@ -150,7 +155,7 @@ impl RenderOnce for Switch {
                     }),
             )
             .child(
-                BaseSwitchThumb::new((self.id, "thumb"))
+                BaseSwitchThumb::new((self.element_id, "thumb"))
                     .absolute()
                     .w(thumb_width)
                     .h(thumb_height)

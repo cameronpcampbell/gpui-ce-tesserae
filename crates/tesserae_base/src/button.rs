@@ -15,7 +15,7 @@ type ClickHandler = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
 /// Callers provide all layout and appearance through GPUI styles and selectors.
 #[derive(IntoElement)]
 pub struct BaseButton {
-    id: ElementId,
+    element_id: ElementId,
     base: Stateful<Div>,
     style: StyleRefinement,
     disabled: bool,
@@ -29,12 +29,12 @@ impl BaseButton {
     /// The class applied while the button is disabled.
     pub const DISABLED_CLASS: &'static str = "disabled";
 
-    pub fn new(id: impl Into<ElementId>) -> Self {
-        let id = id.into();
+    pub fn new(element_id: impl Into<ElementId>) -> Self {
+        let element_id = element_id.into();
 
         Self {
-            id: id.clone(),
-            base: div().id(id),
+            element_id: element_id.clone(),
+            base: div().id(element_id),
             style: StyleRefinement::default(),
             disabled: false,
             focusable_when_disabled: false,
@@ -47,6 +47,7 @@ impl BaseButton {
     /// Sets whether the button ignores pointer and keyboard activation.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+
         self
     }
 
@@ -54,12 +55,14 @@ impl BaseButton {
     /// disabled state changes, while still preventing activation.
     pub fn focusable_when_disabled(mut self, focusable: bool) -> Self {
         self.focusable_when_disabled = focusable;
+
         self
     }
 
     /// Sets the name exposed to accessibility clients.
     pub fn aria_label(mut self, label: impl Into<SharedString>) -> Self {
         self.aria_label = Some(label.into());
+
         self
     }
 
@@ -69,6 +72,7 @@ impl BaseButton {
         handler: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.on_click = Some(Rc::new(handler));
+
         self
     }
 }
@@ -95,7 +99,9 @@ impl StatefulInteractiveElement for BaseButton {}
 
 impl RenderOnce for BaseButton {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let focus_handle = use_focus_handle(self.id.clone(), window, cx, None);
+        let focus_handle =
+            use_focus_handle(self.element_id.clone(), window, cx, None);
+
         let disabled = self.disabled;
         let focusable = !disabled || self.focusable_when_disabled;
         let on_click = if disabled { None } else { self.on_click };
@@ -107,7 +113,7 @@ impl RenderOnce for BaseButton {
             .when_some(self.aria_label, |this, label| this.aria_label(label))
             .when(focusable, |this| this.track_focus(&focus_handle))
             .when(disabled, |this| {
-                this.on_mouse_down(MouseButton::Left, |_, _, cx| {
+                this.on_mouse_down(MouseButton::Left, |_event, _window, cx| {
                     cx.stop_propagation();
                 })
             })
@@ -122,6 +128,8 @@ impl RenderOnce for BaseButton {
 
 #[cfg(all(test, feature = "test-support"))]
 mod tests {
+    use super::BaseButton;
+
     use std::sync::{Arc, Mutex};
 
     use gpui::{
@@ -131,8 +139,6 @@ mod tests {
         TestAppContext, VisualTestContext, Window, accesskit, canvas, div, point,
         px, selectors::class,
     };
-
-    use super::BaseButton;
 
     const BUTTON: &str = "base-button";
 
@@ -153,7 +159,11 @@ mod tests {
                 .id("button-parent")
                 .tab_group()
                 .size_full()
-                .on_click(cx.listener(|this, _, _, _| this.parent_clicks += 1))
+                .on_click(
+                    cx.listener(|this, _event, _window, _app| {
+                        this.parent_clicks += 1
+                    }),
+                )
                 .child(
                     BaseButton::new("button-under-test")
                         .disabled(self.disabled)
@@ -167,10 +177,10 @@ mod tests {
                             style.w(px(80.))
                         })
                         .debug_selector(|| BUTTON.to_owned())
-                        .on_click(cx.listener(|this, event, _, _| {
+                        .on_click(cx.listener(|this, event, _window, _app| {
                             this.clicks.push(matches!(
                                 event,
-                                gpui::ClickEvent::Keyboard(_)
+                                gpui::ClickEvent::Keyboard(_keystroke)
                             ));
                         })),
                 )
@@ -209,6 +219,7 @@ mod tests {
             is_held: false,
             prefer_character_input: false,
         });
+
         cx.simulate_event(KeyUpEvent { keystroke });
     }
 
@@ -237,12 +248,14 @@ mod tests {
             window.focus_next(cx);
             assert!(window.focused(cx).is_none());
         });
+
         assert_eq!(state(&view, cx), (Vec::new(), 0));
 
         view.update(cx, |view, cx| {
             view.focusable_when_disabled = true;
             cx.notify();
         });
+
         bounds(cx);
         cx.update(|window, cx| {
             window.focus_next(cx);
@@ -273,8 +286,9 @@ mod tests {
                 _cx: &mut Context<Self>,
             ) -> impl IntoElement {
                 let captured = self.captured.clone();
+
                 canvas(
-                    move |_, window, cx| {
+                    move |_bounds, window, cx| {
                         let mut info = |button: BaseButton| {
                             let mut node =
                                 accesskit::Node::new(accesskit::Role::Button);
@@ -282,33 +296,36 @@ mod tests {
                                 .render(window, cx)
                                 .into_element()
                                 .write_a11y_info(&mut node);
+
                             node
                         };
 
                         let enabled = info(
                             BaseButton::new("enabled")
                                 .aria_label("Save")
-                                .on_click(|_, _, _| {}),
+                                .on_click(|_event, _window, _app| {}),
                         );
                         let disabled = info(
                             BaseButton::new("disabled")
                                 .disabled(true)
                                 .focusable_when_disabled(true)
                                 .aria_label("Save")
-                                .on_click(|_, _, _| {}),
+                                .on_click(|_event, _window, _app| {}),
                         );
                         *captured.lock().unwrap() = Some((enabled, disabled));
                     },
-                    |_, _, _, _| {},
+                    |_bounds, _prepaint, _window, _app| {},
                 )
             }
         }
 
         let captured: Captured = Arc::new(Mutex::new(None));
         let result = captured.clone();
-        let (_, cx) =
-            cx.add_window_view(move |_, _| AccessibilityProbe { captured });
+        let (_view, cx) =
+            cx.add_window_view(move |_window, _app| AccessibilityProbe { captured });
+
         cx.update(|window, cx| window.draw(cx).clear(cx));
+
         let (enabled, disabled) = result.lock().unwrap().take().unwrap();
 
         assert_eq!(enabled.role(), accesskit::Role::Button);

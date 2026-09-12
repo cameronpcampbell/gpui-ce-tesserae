@@ -1,10 +1,9 @@
 mod color;
 mod element;
-#[doc(hidden)]
-pub mod kinds;
+mod styles;
 mod window;
 
 pub use color::{PerceptualColor, perceptual_contrast};
 pub use element::StyledElement;
-pub use kinds::Kind;
+pub use styles::StylesEnum;
 pub use window::{WindowUtils, use_focus_handle};

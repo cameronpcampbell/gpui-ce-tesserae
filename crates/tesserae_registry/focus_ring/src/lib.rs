@@ -10,16 +10,16 @@ use tesserae_theme::Theme;
 
 #[derive(IntoElement)]
 pub struct FocusRing {
-    id: ElementId,
+    element_id: ElementId,
     thickness: Pixels,
     style: StyleRefinement,
     focus_handle: FocusHandle,
 }
 
 impl FocusRing {
-    pub fn new(id: impl Into<ElementId>, focus_handle: FocusHandle) -> Self {
+    pub fn new(element_id: impl Into<ElementId>, focus_handle: FocusHandle) -> Self {
         Self {
-            id: id.into(),
+            element_id: element_id.into(),
             thickness: px(3.),
             style: StyleRefinement::default(),
             focus_handle,
@@ -37,7 +37,7 @@ impl RenderOnce for FocusRing {
         let focus_ring_color = theme.accent_primary.perceptual_alpha(0.2);
 
         div()
-            .id(self.id)
+            .id(self.element_id)
             .class("focus_ring")
             .absolute()
             .inset_0()

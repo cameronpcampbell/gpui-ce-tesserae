@@ -13,9 +13,9 @@ mod generate;
 pub use generate::ThemeConfig;
 use generate::generate_theme;
 
-pub fn color_from_hex<T: FromColorUnclamped<Rgba> + Clamp>(
+pub fn color_from_hex<Color: FromColorUnclamped<Rgba> + Clamp>(
     hex_code: &str,
-) -> Result<T, <Rgba as FromStr>::Err> {
+) -> Result<Color, <Rgba as FromStr>::Err> {
     (Rgba::from_hex(hex_code) as Result<Rgba, <Rgba as FromStr>::Err>)
         .map(|color| color.into_color())
 }
@@ -114,18 +114,22 @@ pub struct Theme {
 struct HexColor(Oklaba);
 
 #[inline(always)]
-fn contrast_ratio(fg: impl IntoColor<Rgba>, bg: impl IntoColor<Rgba>) -> f32 {
-    fg.into_color()
+fn contrast_ratio(
+    foreground: impl IntoColor<Rgba>,
+    background: impl IntoColor<Rgba>,
+) -> f32 {
+    foreground
+        .into_color()
         .color
-        .relative_contrast(bg.into_color().color)
+        .relative_contrast(background.into_color().color)
 }
 
 impl fmt::Debug for HexColor {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let rgba: Rgba = self.0.into_color();
         let rgba: Srgba<u8> = rgba.into_format();
 
-        write!(f, "#{rgba:x}")
+        write!(formatter, "#{rgba:x}")
     }
 }
 
@@ -144,7 +148,7 @@ impl Theme {
         generate_theme(config, kind)
     }
 
-    pub fn bg(&self, kind: ThemeBgKind) -> Oklaba {
+    pub fn background(&self, kind: ThemeBgKind) -> Oklaba {
         match kind {
             ThemeBgKind::Primary => self.bg_primary,
             ThemeBgKind::Secondary => self.bg_secondary,
@@ -155,7 +159,7 @@ impl Theme {
         }
     }
 
-    pub fn bg_border(&self, kind: ThemeBgBorderKind) -> Oklaba {
+    pub fn background_border(&self, kind: ThemeBgBorderKind) -> Oklaba {
         match kind {
             ThemeBgBorderKind::Primary => self.bg_secondary,
             ThemeBgBorderKind::Secondary => self.bg_tertiary,
@@ -165,7 +169,7 @@ impl Theme {
         }
     }
 
-    pub fn fg(&self, kind: ThemeFgKind) -> Oklaba {
+    pub fn foreground(&self, kind: ThemeFgKind) -> Oklaba {
         match kind {
             ThemeFgKind::Primary => self.fg_primary,
             ThemeFgKind::Secondary => self.fg_secondary,
@@ -173,7 +177,7 @@ impl Theme {
         }
     }
 
-    pub fn fg_inverse(&self, kind: ThemeFgKind) -> Oklaba {
+    pub fn foreground_inverse(&self, kind: ThemeFgKind) -> Oklaba {
         match kind {
             ThemeFgKind::Primary => self.fg_inverse_primary,
             ThemeFgKind::Secondary => self.fg_inverse_secondary,
@@ -181,23 +185,25 @@ impl Theme {
         }
     }
 
-    pub fn fg_for_bg(
+    pub fn foreground_for_background(
         &self,
         kind: ThemeFgKind,
-        bg: impl IntoColor<Oklaba>,
+        background: impl IntoColor<Oklaba>,
     ) -> Oklaba {
-        let bg = bg.into_color();
+        let background = background.into_color();
 
-        let (fg, fg_inverse) = match kind {
+        let (foreground, foreground_inverse) = match kind {
             ThemeFgKind::Primary => (self.fg_primary, self.fg_inverse_primary),
             ThemeFgKind::Secondary => (self.fg_secondary, self.fg_inverse_secondary),
             ThemeFgKind::Tertiary => (self.fg_tertiary, self.fg_inverse_tertiary),
         };
 
-        if contrast_ratio(fg, bg) >= contrast_ratio(fg_inverse, bg) {
-            fg
+        if contrast_ratio(foreground, background)
+            >= contrast_ratio(foreground_inverse, background)
+        {
+            foreground
         } else {
-            fg_inverse
+            foreground_inverse
         }
     }
 
@@ -223,6 +229,7 @@ impl Theme {
         } else {
             self.bg_primary
         };
+
         let lightness_difference = target.color.l - color.color.l;
 
         if lightness_difference > f32::EPSILON {
@@ -247,11 +254,11 @@ impl Theme {
 
     pub fn text_size(&self, kind: ThemeTextSizeKind) -> Rems {
         match kind {
-            ThemeTextSizeKind::Xs => self.text_size_xs,
-            ThemeTextSizeKind::Sm => self.text_size_sm,
+            ThemeTextSizeKind::ExtraSmall => self.text_size_xs,
+            ThemeTextSizeKind::Small => self.text_size_sm,
             ThemeTextSizeKind::Base => self.text_size_base,
-            ThemeTextSizeKind::Lg => self.text_size_lg,
-            ThemeTextSizeKind::Xl => self.text_size_xl,
+            ThemeTextSizeKind::Large => self.text_size_lg,
+            ThemeTextSizeKind::ExtraLarge => self.text_size_xl,
             ThemeTextSizeKind::X2l => self.text_size_2xl,
             ThemeTextSizeKind::X3l => self.text_size_3xl,
             ThemeTextSizeKind::X4l => self.text_size_4xl,
@@ -265,11 +272,11 @@ impl Theme {
 
     pub fn radii(&self, kind: ThemeRadiiKind) -> Rems {
         match kind {
-            ThemeRadiiKind::Xs => self.radii_xs,
-            ThemeRadiiKind::Sm => self.radii_sm,
-            ThemeRadiiKind::Md => self.radii_md,
-            ThemeRadiiKind::Lg => self.radii_lg,
-            ThemeRadiiKind::Xl => self.radii_xl,
+            ThemeRadiiKind::ExtraSmall => self.radii_xs,
+            ThemeRadiiKind::Small => self.radii_sm,
+            ThemeRadiiKind::Medium => self.radii_md,
+            ThemeRadiiKind::Large => self.radii_lg,
+            ThemeRadiiKind::ExtraLarge => self.radii_xl,
             ThemeRadiiKind::X2l => self.radii_2xl,
             ThemeRadiiKind::X3l => self.radii_3xl,
             ThemeRadiiKind::X4l => self.radii_4xl,
@@ -278,11 +285,11 @@ impl Theme {
 
     pub fn size(&self, kind: ThemeSizeKind) -> Rems {
         match kind {
-            ThemeSizeKind::Xs => self.size_xs,
-            ThemeSizeKind::Sm => self.size_sm,
-            ThemeSizeKind::Md => self.size_md,
-            ThemeSizeKind::Lg => self.size_lg,
-            ThemeSizeKind::Xl => self.size_xl,
+            ThemeSizeKind::ExtraSmall => self.size_xs,
+            ThemeSizeKind::Small => self.size_sm,
+            ThemeSizeKind::Medium => self.size_md,
+            ThemeSizeKind::Large => self.size_lg,
+            ThemeSizeKind::ExtraLarge => self.size_xl,
             ThemeSizeKind::X2l => self.size_2xl,
             ThemeSizeKind::X3l => self.size_3xl,
             ThemeSizeKind::X4l => self.size_4xl,
@@ -293,11 +300,11 @@ impl Theme {
 
     pub fn padding(&self, kind: ThemePaddingKind) -> Rems {
         match kind {
-            ThemePaddingKind::Xs => self.padding_xs,
-            ThemePaddingKind::Sm => self.padding_sm,
-            ThemePaddingKind::Md => self.padding_md,
-            ThemePaddingKind::Lg => self.padding_lg,
-            ThemePaddingKind::Xl => self.padding_xl,
+            ThemePaddingKind::ExtraSmall => self.padding_xs,
+            ThemePaddingKind::Small => self.padding_sm,
+            ThemePaddingKind::Medium => self.padding_md,
+            ThemePaddingKind::Large => self.padding_lg,
+            ThemePaddingKind::ExtraLarge => self.padding_xl,
             ThemePaddingKind::X2l => self.padding_2xl,
             ThemePaddingKind::X3l => self.padding_3xl,
             ThemePaddingKind::X4l => self.padding_4xl,
@@ -342,11 +349,11 @@ pub enum ThemeAccentKind {
 
 #[derive(Clone, Copy)]
 pub enum ThemeTextSizeKind {
-    Xs,
-    Sm,
+    ExtraSmall,
+    Small,
     Base,
-    Lg,
-    Xl,
+    Large,
+    ExtraLarge,
     X2l,
     X3l,
     X4l,
@@ -359,11 +366,11 @@ pub enum ThemeTextSizeKind {
 
 #[derive(Clone, Copy)]
 pub enum ThemeRadiiKind {
-    Xs,
-    Sm,
-    Md,
-    Lg,
-    Xl,
+    ExtraSmall,
+    Small,
+    Medium,
+    Large,
+    ExtraLarge,
     X2l,
     X3l,
     X4l,
@@ -371,11 +378,11 @@ pub enum ThemeRadiiKind {
 
 #[derive(Clone, Copy)]
 pub enum ThemeSizeKind {
-    Xs,
-    Sm,
-    Md,
-    Lg,
-    Xl,
+    ExtraSmall,
+    Small,
+    Medium,
+    Large,
+    ExtraLarge,
     X2l,
     X3l,
     X4l,
@@ -385,11 +392,11 @@ pub enum ThemeSizeKind {
 
 #[derive(Clone, Copy)]
 pub enum ThemePaddingKind {
-    Xs,
-    Sm,
-    Md,
-    Lg,
-    Xl,
+    ExtraSmall,
+    Small,
+    Medium,
+    Large,
+    ExtraLarge,
     X2l,
     X3l,
     X4l,

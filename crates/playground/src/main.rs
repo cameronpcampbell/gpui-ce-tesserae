@@ -1,3 +1,4 @@
+use assets::Assets;
 use bubble::Bubble;
 use button::{Button, ButtonSizeKind, ButtonVariantKind};
 use gpui::{
@@ -12,7 +13,6 @@ use switch::Switch;
 use tesserae_theme::{Theme, ThemeConfig, ThemeSet, ThemeSetKind, color_from_hex};
 
 mod assets;
-use assets::Assets;
 
 struct Root;
 
@@ -50,7 +50,7 @@ impl Render for Root {
                         .gap(px(10.))
                         .child(
                             Button::new(("button_xs", variant as usize))
-                                .size(ButtonSizeKind::Xs)
+                                .size(ButtonSizeKind::ExtraSmall)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -59,7 +59,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("icon_button_xs", variant as usize))
-                                .size(ButtonSizeKind::XsIcon)
+                                .size(ButtonSizeKind::ExtraSmallIcon)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -67,7 +67,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("button_sm", variant as usize))
-                                .size(ButtonSizeKind::Sm)
+                                .size(ButtonSizeKind::Small)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -76,7 +76,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("icon_button_sm", variant as usize))
-                                .size(ButtonSizeKind::SmIcon)
+                                .size(ButtonSizeKind::SmallIcon)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -84,7 +84,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("button_md", variant as usize))
-                                .size(ButtonSizeKind::Md)
+                                .size(ButtonSizeKind::Medium)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -93,7 +93,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("icon_button_md", variant as usize))
-                                .size(ButtonSizeKind::MdIcon)
+                                .size(ButtonSizeKind::MediumIcon)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -101,7 +101,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("button_lg", variant as usize))
-                                .size(ButtonSizeKind::Lg)
+                                .size(ButtonSizeKind::Large)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -110,7 +110,7 @@ impl Render for Root {
                         )
                         .child(
                             Button::new(("icon_button_lg", variant as usize))
-                                .size(ButtonSizeKind::LgIcon)
+                                .size(ButtonSizeKind::LargeIcon)
                                 .variant(variant)
                                 .child(
                                     svg().class("icon").path("icons/sparkles.svg"),
@@ -174,25 +174,25 @@ fn main() {
 actions!(window, [TabNext, TabPrev]);
 
 fn init_tab_indexing_actions(cx: &mut App) {
-    cx.on_action(move |_: &TabNext, cx| {
+    cx.on_action(move |_action: &TabNext, cx| {
         cx.defer(move |cx| {
             let Some(window) = cx.active_window() else {
                 return;
             };
 
-            let _ = window.update(cx, move |_, window, cx| {
+            let _update_result = window.update(cx, move |_view, window, cx| {
                 window.focus_next(cx);
             });
         })
     });
 
-    cx.on_action(move |_: &TabPrev, cx| {
+    cx.on_action(move |_action: &TabPrev, cx| {
         cx.defer(move |cx| {
             let Some(window) = cx.active_window() else {
                 return;
             };
 
-            let _ = window.update(cx, move |_, window, cx| {
+            let _update_result = window.update(cx, move |_view, window, cx| {
                 window.focus_prev(cx);
             });
         })

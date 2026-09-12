@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 gpui.workspace = true
+tesserae_macros.workspace = true
 tesserae_theme.workspace = true
 tesserae_utils.workspace = true
 palette.workspace = true
