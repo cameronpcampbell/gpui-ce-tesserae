@@ -179,7 +179,7 @@ impl RenderOnce for BaseSwitchThumb {
     fn render(self, _window: &mut Window, _app: &mut App) -> impl IntoElement {
         self.base
             .class(Self::CLASS)
-            .aria_hidden(true)
+            .aria_hidden()
             .refine_style(&self.style)
             .children(self.children)
     }

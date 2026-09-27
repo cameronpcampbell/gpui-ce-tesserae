@@ -139,6 +139,8 @@ impl Render for Root {
 
 fn main() {
     gpui_platform::application().with_assets(Assets).run(|cx| {
+        Assets::init(cx).ok();
+
         cx.bind_keys(default_bindings().as_keybindings(Some(DEFAULT_INPUT_CONTEXT)));
 
         cx.open_window(

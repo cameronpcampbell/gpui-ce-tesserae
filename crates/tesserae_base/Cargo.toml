@@ -8,4 +8,5 @@ test-support = ["gpui/test-support"]
 
 [dependencies]
 gpui.workspace = true
+smallvec.workspace = true
 tesserae_utils.workspace = true

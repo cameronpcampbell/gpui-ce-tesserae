@@ -47,6 +47,8 @@ impl RenderOnce for Bubble {
             .rounded_full()
             .rounded_smoothing_1()
             .border_1()
+            .border_dashed_length(6.)
+            .border_dashed_gap(3.)
             .items_center()
             .justify_center()
             .flex()
